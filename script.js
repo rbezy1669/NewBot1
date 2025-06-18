@@ -1,24 +1,34 @@
-window.Telegram.WebApp.ready();
+console.log("Telegram user:", user);
 
-const tg = window.Telegram.WebApp;
-const user = tg.initDataUnsafe?.user;
-
-if (user) {
-  document.getElementById("username").innerText = `👤 ${user.first_name}`;
-  document.getElementById("userName").innerText = `👤 ${user.first_name}`;
-} else {
-  document.getElementById("username").innerText = "❗ Требуется авторизация в Telegram";
-  document.getElementById("userName").innerText = "❗ Неизвестный пользователь";
-}
-
-
-// Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    const user = tg.initDataUnsafe?.user;
+
+    window.tg = tg;
+    window.user = user;
+
+    console.log("Telegram user:", user);
+
     initTelegramApp();
     setupNavigation();
     loadUserData();
     loadReadingsHistory();
 });
+
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', function() {
+    window.tg = tg;
+    window.user = user;
+
+    console.log("Telegram user:", user);
+
+    initTelegramApp();
+    setupNavigation();
+    loadUserData();
+    loadReadingsHistory();
+});
+
 
 function initTelegramApp() {
     // Настройка Telegram WebApp
@@ -302,13 +312,27 @@ function openChat() {
 }
 
 // Обработка событий Telegram WebApp
-tg.onEvent('mainButtonClicked', function() {
-    tg.close();
+window.tg.onEvent('mainButtonClicked', function() {
+    window.tg.close();
 });
 
-tg.onEvent('backButtonClicked', function() {
-    tg.close();
+window.tg.onEvent('backButtonClicked', function() {
+    window.tg.close();
 });
+
+function orderMeterCheck() {
+    window.tg.HapticFeedback.impactOccurred('light');
+
+    if (window.user) {
+        window.tg.sendData(JSON.stringify({
+            action: 'order_meter_check',
+            user_id: window.user.id
+        }));
+    } else {
+        showNotification('Требуется авторизация в Telegram', 'error');
+    }
+}
+
 
 // Обработка изменения viewport
 window.addEventListener('resize', function() {
@@ -334,14 +358,14 @@ document.addEventListener('touchend', function(event) {
 }, false);
 
 // Дебаг информация (только в режиме разработки)
-if (tg.initDataUnsafe?.user?.id === 123456789) {
+if (window.user?.id === 123456789) {
     console.log('Telegram WebApp Debug Info:', {
-        platform: tg.platform,
-        version: tg.version,
-        user: user,
-        themeParams: tg.themeParams,
-        isExpanded: tg.isExpanded,
-        viewportHeight: tg.viewportHeight,
-        viewportStableHeight: tg.viewportStableHeight
+        platform: window.tg.platform,
+        version: window.tg.version,
+        user: window.user,
+        themeParams: window.tg.themeParams,
+        isExpanded: window.tg.isExpanded,
+        viewportHeight: window.tg.viewportHeight,
+        viewportStableHeight: window.tg.viewportStableHeight
     });
 }
