@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Конфигурация
-BOT_TOKEN = os.getenv('BOT_TOKEN', '')
+BOT_TOKEN = os.getenv('7807810519:AAGlq6BQhrOiLJe1Obl0H0-nKoHk0KLfsmw', '')
 CLIENT_ID = os.getenv('GOSUSLUGI_CLIENT_ID', 'your_client_id')
 REDIRECT_URI = os.getenv('REDIRECT_URI', 'https://yourdomain.ru/callback')
 AUTH_URL = (
