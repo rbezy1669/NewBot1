@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Энергосбыт — Личный кабинет</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header id="header">
+        <div class="user-info" id="userInfo">
+            <span id="userName">Загрузка...</span>
+        </div>
+        <h1>Энергосбыт — Личный кабинет</h1>
+    </header>
+
+    <main>
+        <section class="navigation-section">
+            <div class="nav-buttons">
+                <button class="nav-btn active" data-section="readings">📊 Показания</button>
+                <button class="nav-btn" data-section="history">📈 История</button>
+                <button class="nav-btn" data-section="services">🔧 Услуги</button>
+                <button class="nav-btn" data-section="support">📞 Поддержка</button>
+            </div>
+        </section>
+
+        <!-- Секция передачи показаний -->
+        <section id="readings-section" class="content-section active">
+            <h2>Передача показаний</h2>
+            <div class="readings-form">
+                <div class="meter-info">
+                    <p>Лицевой счёт: <span id="accountNumber">Загрузка...</span></p>
+                    <p>Последние показания: <span id="lastReading">-</span></p>
+                </div>
+                <form id="readingsForm">
+                    <div class="input-group">
+                        <label for="currentReading">Текущие показания</label>
+                        <input type="number" id="currentReading" placeholder="Введите показания" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Передать показания</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Секция истории -->
+        <section id="history-section" class="content-section">
+            <h2>История показаний</h2>
+            <div class="history-list" id="historyList">
+                <div class="loading">Загрузка истории...</div>
+            </div>
+        </section>
+
+        <!-- Секция услуг -->
+        <section id="services-section" class="content-section">
+            <h2>Услуги</h2>
+            <div class="services-list">
+                <div class="service-card">
+                    <h3>Замена счётчика</h3>
+                    <p>Заказать замену или установку нового счётчика</p>
+                    <button class="service-btn" onclick="orderMeterReplacement()">Заказать</button>
+                </div>
+                <div class="service-card">
+                    <h3>Проверка счётчика</h3>
+                    <p>Поверка счётчика на дому</p>
+                    <button class="service-btn" onclick="orderMeterCheck()">Заказать</button>
+                </div>
+                <div class="service-card">
+                    <h3>Консультация</h3>
+                    <p>Бесплатная консультация по энергосбережению</p>
+                    <button class="service-btn" onclick="orderConsultation()">Заказать</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Секция поддержки -->
+        <section id="support-section" class="content-section">
+            <h2>Поддержка</h2>
+            <div class="support-info">
+                <div class="contact-card">
+                    <h3>Горячая линия</h3>
+                    <p class="contact-number">8 (800) 555-01-23</p>
+                    <p class="contact-hours">Круглосуточно, бесплатно</p>
+                </div>
+                <div class="contact-card">
+                    <h3>Аварийная служба</h3>
+                    <p class="contact-number">8 (800) 555-09-11</p>
+                    <p class="contact-hours">24/7</p>
+                </div>
+                <div class="contact-card">
+                    <h3>Онлайн поддержка</h3>
+                    <button class="support-btn" onclick="openChat()">Написать в чат</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2025 Энергосбыт. Все права защищены.
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

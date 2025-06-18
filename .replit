@@ -1,0 +1,33 @@
+modules = ["python-3.11", "postgresql-16"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["libxcrypt"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Russian Energy Platform"
+
+[[workflows.workflow]]
+name = "Russian Energy Platform"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_web.py"
+waitForPort = 5000
+
+[deployment]
+run = ["sh", "-c", "python start_web.py"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80

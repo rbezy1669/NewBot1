@@ -1,0 +1,391 @@
+/* Telegram Mini App стили */
+:root {
+    --tg-theme-bg-color: var(--tg-theme-bg-color, #ffffff);
+    --tg-theme-text-color: var(--tg-theme-text-color, #000000);
+    --tg-theme-hint-color: var(--tg-theme-hint-color, #999999);
+    --tg-theme-link-color: var(--tg-theme-link-color, #2481cc);
+    --tg-theme-button-color: var(--tg-theme-button-color, #2481cc);
+    --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+    --tg-theme-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f1f1f1);
+    
+    --energy-primary: #0a3d62;
+    --energy-secondary: #1e5f8c;
+    --energy-accent: #ffa726;
+    --energy-success: #4caf50;
+    --energy-warning: #ff9800;
+    --energy-error: #f44336;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    overflow-x: hidden;
+}
+
+/* Заголовок */
+#header {
+    background: linear-gradient(135deg, var(--energy-primary), var(--energy-secondary));
+    color: white;
+    padding: 16px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.user-info {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+#header h1 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Навигация */
+.navigation-section {
+    padding: 12px 16px;
+    background: var(--tg-theme-secondary-bg-color);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-buttons::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-btn {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tg-theme-text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.nav-btn.active {
+    background: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border-color: var(--tg-theme-button-color);
+}
+
+/* Секции контента */
+.content-section {
+    display: none;
+    padding: 20px 16px;
+    min-height: calc(100vh - 140px);
+}
+
+.content-section.active {
+    display: block;
+}
+
+.content-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--energy-primary);
+}
+
+/* Форма показаний */
+.meter-info {
+    background: var(--tg-theme-secondary-bg-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.meter-info p {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.meter-info span {
+    font-weight: 600;
+    color: var(--energy-primary);
+}
+
+.readings-form {
+    max-width: 400px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--tg-theme-text-color);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    background: white;
+    color: var(--tg-theme-text-color);
+    transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--tg-theme-button-color);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.submit-btn:active {
+    transform: scale(0.98);
+}
+
+/* История показаний */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-date {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color);
+}
+
+.history-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--energy-primary);
+}
+
+.history-status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--energy-success);
+    color: white;
+}
+
+/* Услуги */
+.services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.service-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--energy-primary);
+}
+
+.service-card p {
+    color: var(--tg-theme-hint-color);
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.service-btn {
+    background: var(--energy-accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.service-btn:active {
+    transform: scale(0.95);
+}
+
+/* Поддержка */
+.support-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.contact-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.contact-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--energy-primary);
+}
+
+.contact-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--tg-theme-button-color);
+    margin-bottom: 4px;
+}
+
+.contact-hours {
+    font-size: 12px;
+    color: var(--tg-theme-hint-color);
+}
+
+.support-btn {
+    background: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: transform 0.2s ease;
+}
+
+.support-btn:active {
+    transform: scale(0.95);
+}
+
+/* Футер */
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: var(--tg-theme-hint-color);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    background: var(--tg-theme-secondary-bg-color);
+}
+
+/* Состояния загрузки */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--tg-theme-hint-color);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.content-section.active {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 80px;
+    left: 16px;
+    right: 16px;
+    background: var(--energy-success);
+    color: white;
+    padding: 16px;
+    border-radius: 12px;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(-100px);
+    transition: transform 0.3s ease;
+}
+
+.notification.show {
+    transform: translateY(0);
+}
+
+.notification.error {
+    background: var(--energy-error);
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+    .service-card,
+    .contact-card,
+    .history-item,
+    .meter-info {
+        background: var(--tg-theme-secondary-bg-color);
+        border-color: rgba(255,255,255,0.1);
+    }
+    
+    .input-group input {
+        background: var(--tg-theme-secondary-bg-color);
+        border-color: rgba(255,255,255,0.2);
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .content-section {
+        padding: 16px 12px;
+    }
+    
+    .nav-buttons {
+        gap: 6px;
+    }
+    
+    .nav-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}

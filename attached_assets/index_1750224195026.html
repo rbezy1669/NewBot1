@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Энергосбыт — Акции и Скидки</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>Энергосбыт — Выгодные предложения</header>
+
+<main>
+  <section class="filter-section">
+    <h2>Фильтр акций</h2>
+    <div class="filters">
+      <button class="filter-btn active" data-type="all">Все</button>
+      <button class="filter-btn" data-type="discount">Скидки</button>
+      <button class="filter-btn" data-type="consult">Консультации</button>
+      <button class="filter-btn" data-type="promo">Акции</button>
+      <button class="filter-btn" data-type="loyalty">Лояльность</button>
+    </div>
+  </section>
+
+  <section class="promo-section">
+    <div class="promo-list" id="promoList"></div>
+  </section>
+
+  <section class="subscribe-section">
+    <h2>Подписка на новости</h2>
+    <form id="subscribeForm" novalidate>
+      <input
+        type="email"
+        id="emailInput"
+        placeholder="Введите ваш email"
+        required
+        autocomplete="email"
+      />
+      <button type="submit">Подписаться</button>
+    </form>
+    <p id="subscribeMessage" role="alert" aria-live="polite"></p>
+  </section>
+</main>
+
+<footer>
+  &copy; 2025 Энергосбыт. Все права защищены.
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
