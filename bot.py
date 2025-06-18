@@ -45,11 +45,15 @@ AUTH_URL = (
 READING_INPUT = 1
 REPLACEMENT_DETAILS = 2
 
-# Клавиатуры
+from telegram import KeyboardButton, WebAppInfo
+
 MAIN_KEYBOARD = [
-    ['📱 Открыть личный кабинет'],
-    ['📊 Передать показания', '📈 История показаний'],
-    ['🔧 Замена счётчиков', '📞 Связаться с поддержкой']
+    [KeyboardButton("📱 Открыть личный кабинет", web_app=WebAppInfo(url="https://new-bot1-murex.vercel.app"))],
+    ["📊 Передать показания", "📈 История показаний"],
+    ["🔧 Замена счётчиков", "📞 Связаться с поддержкой"]
+]
+MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
+
 ]
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 
