@@ -471,6 +471,7 @@ def main():
         print("Установите переменную окружения BOT_TOKEN для запуска бота.")
         return
     
+    
     # Создание приложения
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
@@ -515,4 +516,5 @@ def main():
     # Запуск бота
     app.run_polling(drop_pending_updates=True)
 
-
+if __name__ == "__main__":
+    main()
