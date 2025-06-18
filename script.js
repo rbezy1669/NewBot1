@@ -157,7 +157,11 @@ function displayReadingsHistory(readings) {
     }).join('');
 
     historyContainer.innerHTML = historyHTML;
+
+    // 🔽 ДОБАВЬ ЭТУ СТРОКУ ЗДЕСЬ:
+    drawChart(readings);
 }
+
 
 document.getElementById('readingsForm').addEventListener('submit', async function(e) {
     e.preventDefault();
