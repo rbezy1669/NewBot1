@@ -54,7 +54,6 @@ MAIN_KEYBOARD = [
 ]
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 
-]
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 
 # URL Mini App (замените на ваш домен)
