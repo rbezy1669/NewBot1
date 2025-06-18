@@ -33,6 +33,10 @@
         transform: translateY(0);
       }
     }
+    #readingChart {
+      width: 100% !important;
+      border: 1px dashed red; /* временно для отладки */
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start px-4 pt-6">
@@ -64,7 +68,7 @@
     <!-- График -->
     <div class="glass p-4 transition fade-in">
       <h2 class="text-lg font-semibold mb-2">📉 График потребления</h2>
-      <canvas id="readingChart" height="200"></canvas>
+      <canvas id="readingChart" height="200" class="w-full"></canvas>
     </div>
 
     <!-- Поддержка -->
@@ -83,75 +87,55 @@
   <script src="script.js"></script>
   <script>
     function drawChart(readings) {
+      console.log('🎯 Рисую график на', readings.length, 'точках');
       const labels = readings.map(r => new Date(r.date).toLocaleDateString("ru-RU"));
       const data = readings.map(r => r.value);
       const ctx = document.getElementById('readingChart').getContext('2d');
 
       new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: labels,
-    datasets: [{
-      label: 'кВт·ч',
-      data: data,
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37, 99, 235, 0.2)',
-      tension: 0.3,
-      fill: true
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: {
-        labels: {
-          color: '#ffffff'
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'кВт·ч',
+            data: data,
+            borderColor: '#ffffff',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: {
+                color: '#ffffff'
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: '#ffffff'
+              },
+              grid: {
+                color: 'rgba(255,255,255,0.1)'
+              }
+            },
+            y: {
+              ticks: {
+                color: '#ffffff'
+              },
+              grid: {
+                color: 'rgba(255,255,255,0.1)'
+              }
+            }
+          }
         }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#ffffff' },
-        grid: { color: 'rgba(255,255,255,0.1)' }
-      },
-      y: {
-        ticks: { color: '#ffffff' },
-        grid: { color: 'rgba(255,255,255,0.1)' }
-      }
+      });
     }
-  }
-});
-
-
-    // Загрузи график после загрузки истории (обязательно, чтобы readings был доступен)
-    function displayReadingsHistory(readings) {
-  const historyContainer = document.getElementById('historyList');
-  if (!historyContainer) return;
-
-  if (!readings || readings.length === 0) {
-    historyContainer.innerHTML = '<div class="loading">История показаний пуста</div>';
-    return;
-  }
-
-  const historyHTML = readings.map(reading => {
-    const date = new Date(reading.date);
-    const formattedDate = date.toLocaleDateString('ru-RU', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
-    });
-
-    return `
-      <div class="history-item">
-        <div>
-          <div class="history-value">${reading.value.toLocaleString('ru-RU')} кВт·ч</div>
-          <div class="history-date">${formattedDate}</div>
-        </div>
-        <div class="history-status">Принято</div>
-      </div>
-    `;
-  }).join('');
-
-  historyContainer.innerHTML = historyHTML;
-
-  // ✅ Добавь вызов графика здесь:
-  drawChart(readings);
-}
+  </script>
+</body>
+</html>

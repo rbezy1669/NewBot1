@@ -157,6 +157,8 @@ function displayReadingsHistory(readings) {
     }).join('');
 
     historyContainer.innerHTML = historyHTML;
+    console.log("📊 Отрисовываем график, данных:", readings);
+    console.log("📊 Отрисовываем график, данных:", readings);
 
     // 🔽 ДОБАВЬ ЭТУ СТРОКУ ЗДЕСЬ:
     drawChart(readings);
