@@ -435,6 +435,32 @@ async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+import json
+
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка данных, отправленных из Telegram WebApp"""
+    try:
+        data = json.loads(update.effective_message.web_app_data.data)
+
+        if data.get("action") == "support_request":
+            user_id = data.get("user_id")
+            name = data.get("name")
+            timestamp = data.get("timestamp")
+
+            logger.info(f"📥 Обращение в ТП от {name} (ID: {user_id}), время: {timestamp}")
+
+            await update.message.reply_text(
+                "✅ Ваше обращение принято! С вами свяжется оператор при необходимости.",
+                reply_markup=MAIN_MARKUP
+            )
+        else:
+            await update.message.reply_text("⚠️ Неизвестное действие от WebApp.", reply_markup=MAIN_MARKUP)
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка обработки web_app_data: {e}")
+        await update.message.reply_text("❌ Ошибка при обработке обращения.", reply_markup=MAIN_MARKUP)
+
+
 async def cancel_operation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отмена текущей операции"""
     await update.message.reply_text(
@@ -465,6 +491,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Попробуйте повторить операцию или обратитесь в службу поддержки.",
             reply_markup=MAIN_MARKUP
         )
+
 
 
 def main():
@@ -517,7 +544,9 @@ def main():
     print("🤖 Бот Энергосбыт запущен и готов к работе!")
     
     # Запуск бота
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
     app.run_polling(drop_pending_updates=True)
+    
 
 if __name__ == "__main__":
     main()

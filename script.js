@@ -245,6 +245,24 @@ if (window.tg?.onEvent) {
     window.tg.onEvent('backButtonClicked', () => window.tg.close());
 }
 
+function sendSupportRequest() {
+    window.tg.HapticFeedback.impactOccurred('light');
+
+    if (window.user) {
+        const payload = {
+            action: 'support_request',
+            user_id: window.user.id,
+            name: window.user.first_name + ' ' + (window.user.last_name || ''),
+            timestamp: Date.now()
+        };
+
+        window.tg.sendData(JSON.stringify(payload));
+        showNotification('Обращение отправлено!');
+    } else {
+        showNotification('Требуется авторизация в Telegram', 'error');
+    }
+}
+
 window.addEventListener('resize', function() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
