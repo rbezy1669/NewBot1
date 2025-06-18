@@ -88,28 +88,40 @@
       const ctx = document.getElementById('readingChart').getContext('2d');
 
       new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'кВт·ч',
-            data: data,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.2)',
-            tension: 0.3,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          }
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'кВт·ч',
+      data: data,
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37, 99, 235, 0.2)',
+      tension: 0.3,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color: '#ffffff'
         }
-      });
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#ffffff' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      },
+      y: {
+        ticks: { color: '#ffffff' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      }
     }
+  }
+});
+
 
     // Загрузи график после загрузки истории (обязательно, чтобы readings был доступен)
     const originalDisplayReadingsHistory = window.displayReadingsHistory;
