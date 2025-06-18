@@ -3,8 +3,10 @@ Telegram Bot для службы Энергосбыт
 Функционал: передача показаний, история, замена счётчиков, поддержка, OAuth через Госуслуги
 """
 
-import os
 import logging
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import sqlite3
 import asyncio
 from datetime import datetime
@@ -514,8 +516,3 @@ def main():
     app.run_polling(drop_pending_updates=True)
 
 
-if __name__ == '__main__':
-    main()
-
-from dotenv import load_dotenv
-load_dotenv()
