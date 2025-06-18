@@ -57,7 +57,7 @@ MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 
 # URL Mini App (замените на ваш домен)
-MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://your-domain.com')
+MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://new-bot1-murex.vercel.app')
 
 CANCEL_KEYBOARD = [['❌ Отмена']]
 CANCEL_MARKUP = ReplyKeyboardMarkup(CANCEL_KEYBOARD, resize_keyboard=True)
