@@ -1,6 +1,16 @@
-// Telegram Mini App для Энергосбыт
-let tg = window.Telegram.WebApp;
-let user = tg.initDataUnsafe?.user;
+window.Telegram.WebApp.ready();
+
+const tg = window.Telegram.WebApp;
+const user = tg.initDataUnsafe?.user;
+
+if (user) {
+  document.getElementById("username").innerText = `👤 ${user.first_name}`;
+  document.getElementById("userName").innerText = `👤 ${user.first_name}`;
+} else {
+  document.getElementById("username").innerText = "❗ Требуется авторизация в Telegram";
+  document.getElementById("userName").innerText = "❗ Неизвестный пользователь";
+}
+
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
