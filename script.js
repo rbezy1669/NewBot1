@@ -510,6 +510,17 @@ function updateDebtBlock() {
     stat.style.fontWeight = "bold";
   }
 }
+
+
+
+
+function updateDebtBlock() {
+  const stat = document.getElementById("statDebt");
+  if (stat) {
+    stat.innerText = "-3 876,55 ₽";
+    stat.style.color = "red";
+    stat.style.fontWeight = "bold";
+  }
 }
 
-
+updateDebtBlock();
