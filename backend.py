@@ -245,7 +245,7 @@ async def submit_reading(submission: ReadingSubmission, db: Session = Depends(ge
         reading = db_manager.add_reading(
             user_id=str(submission.telegram_id),
             reading_value=submission.reading_value,
-            meter_type=submission.meter_type,
+            meter_type=submission.meter_type or 'electric',
             method='mini_app'
         )
         
@@ -288,7 +288,7 @@ async def create_service_request(request: ServiceRequestModel, db: Session = Dep
         service_request = db_manager.add_service_request(
             user_id=str(request.telegram_id),
             service_type=request.service_type,
-            description=request.description
+            description=request.description or f"Заявка на {request.service_type}"
         )
         
         return {

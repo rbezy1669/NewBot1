@@ -17,8 +17,8 @@ The system follows a microservices architecture with the following main componen
 ### Backend
 - **API Server**: FastAPI-based REST API
 - **Authentication**: OAuth2 integration with Gosuslugi (Russian government services)
-- **Database**: SQLite for data persistence
-- **Technologies**: Python 3.11, FastAPI, SQLite, Pydantic
+- **Database**: PostgreSQL for data persistence with SQLAlchemy ORM
+- **Technologies**: Python 3.11, FastAPI, PostgreSQL, SQLAlchemy, Pydantic
 
 ### Bot Service
 - **Telegram Bot**: Interactive bot for customer services with Mini App integration
@@ -119,6 +119,15 @@ The system follows a microservices architecture with the following main componen
 - Parallel service execution via workflows
 
 ## Changelog
+- June 19, 2025. **Major Migration Update**: Successfully migrated from Replit Agent to standard Replit environment with enhanced features:
+  - Upgraded database from SQLite to PostgreSQL with proper environment configuration
+  - Completely redesigned Mini App interface with modern glass-morphism design
+  - Added comprehensive statistics dashboard with real-time charts
+  - Implemented tabbed navigation (Readings, History, Services)
+  - Enhanced service request system with multiple utility types (electric, gas, water)
+  - Added quick actions floating button and improved UX interactions
+  - Fixed API integration issues and improved error handling
+  - Integrated Chart.js for consumption visualization
 - June 18, 2025. Initial setup
 
 ## User Preferences

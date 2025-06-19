@@ -3,139 +3,569 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Энергосбыт</title>
+  <title>Энергосбыт - Личный Кабинет</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --tg-theme-bg-color: white;
-      --tg-theme-text-color: black;
+      --tg-bg-color: #ffffff;
+      --tg-text-color: #000000;
+      --tg-button-color: #2ea6ff;
+      --tg-button-text-color: #ffffff;
+      --tg-secondary-bg-color: #f7f8fa;
+      --primary-color: #007aff;
+      --success-color: #28a745;
+      --warning-color: #ffc107;
+      --danger-color: #dc3545;
+      --info-color: #17a2b8;
+      --border-radius: 12px;
+      --shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background-color: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--tg-text-color);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .glass {
+
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+      font-weight: 300;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, var(--primary-color), var(--info-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 20px;
+      margin-right: 15px;
+    }
+
+    .user-details h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .user-details p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-item {
+      background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      text-align: center;
+      border: 1px solid rgba(0, 123, 255, 0.1);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .reading-form {
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e5ea;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success-color) 0%, #1e7e34 100%);
+      color: white;
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning-color) 0%, #e0a800 100%);
+      color: #212529;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: calc(var(--border-radius) - 4px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .tab.active {
       background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(12px);
-      border-radius: 1rem;
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      color: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 250px;
+      margin: 20px 0;
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 15px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-date {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .history-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .service-item {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .service-item:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    .service-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .service-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .service-description {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: white;
+      padding: 15px 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      transition: all 0.3s ease;
+      max-width: 90%;
+      border-left: 4px solid var(--success-color);
+    }
+
+    .notification.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .notification.error {
+      border-left-color: var(--danger-color);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .fade-in {
       opacity: 0;
       transform: translateY(20px);
       animation: fadeInUp 0.6s ease-out forwards;
     }
+
     @keyframes fadeInUp {
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-    #readingChart {
-      width: 100% !important;
-      border: 1px dashed red; /* временно для отладки */
+
+    .meter-types {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .meter-type {
+      padding: 15px 10px;
+      background: #f8f9fa;
+      border: 2px solid transparent;
+      border-radius: var(--border-radius);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .meter-type.active {
+      border-color: var(--primary-color);
+      background: rgba(0, 123, 255, 0.1);
+      color: var(--primary-color);
+    }
+
+    .quick-actions {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .fab {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 123, 255, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 25px rgba(0, 123, 255, 0.6);
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start px-4 pt-6">
-  <div class="text-center mb-6 fade-in">
-    <h1 class="text-2xl font-bold">⚡ Энергосбыт</h1>
-    <p class="text-gray-500">Ваш личный помощник по учёту электроэнергии</p>
-  </div>
-
-  <div id="userName" class="text-xl font-semibold mb-4 fade-in"></div>
-
-  <div class="w-full max-w-md space-y-4">
-    <!-- Передать показания -->
-    <div class="glass p-4 transition fade-in">
-      <h2 class="text-lg font-semibold mb-2">📊 Передача показаний</h2>
-      <form id="readingsForm" class="flex flex-col space-y-2">
-        <input id="currentReading" type="number" placeholder="Введите показания..." class="p-2 rounded border focus:outline-none">
-        <button type="submit" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Передать</button>
-      </form>
+<body>
+  <div class="container">
+    <div class="header fade-in">
+      <h1>⚡ Энергосбыт</h1>
+      <p>Умный помощник по учёту электроэнергии</p>
     </div>
 
-    <!-- История -->
-    <div class="glass p-4 transition fade-in">
-      <h2 class="text-lg font-semibold mb-2">📈 История</h2>
-      <div id="historyList" class="text-sm text-white">
-        <div class="loading">Загрузка истории...</div>
+    <div class="card fade-in" style="animation-delay: 0.1s">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">У</div>
+        <div class="user-details">
+          <h3 id="userName">Загрузка...</h3>
+          <p id="userStatus">Подключение к системе</p>
+        </div>
       </div>
     </div>
 
-    <!-- График -->
-    <div class="glass p-4 transition fade-in">
-      <h2 class="text-lg font-semibold mb-2">📉 График потребления</h2>
-      <canvas id="readingChart" height="200" class="w-full"></canvas>
+    <div class="card fade-in" style="animation-delay: 0.2s">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="currentReading">-</div>
+          <div class="stat-label">Текущие показания</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="monthlyUsage">-</div>
+          <div class="stat-label">Расход за месяц</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="totalReadings">-</div>
+          <div class="stat-label">Всего передано</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="nextPayment">-</div>
+          <div class="stat-label">К доплате</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Поддержка -->
-    <div class="glass p-4 transition fade-in">
-      <h2 class="text-lg font-semibold mb-2">📞 Поддержка</h2>
-      <div class="flex flex-col space-y-2">
-        <button onclick="openChat()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700">💬 Написать в чат</button>
-        <button onclick="sendSupportRequest()" class="bg-gray-700 text-white p-2 rounded hover:bg-gray-800">📮 Отправить обращение</button>
+    <div class="tabs fade-in" style="animation-delay: 0.3s">
+      <div class="tab active" onclick="showTab('readings')">Показания</div>
+      <div class="tab" onclick="showTab('history')">История</div>
+      <div class="tab" onclick="showTab('services')">Услуги</div>
+    </div>
+
+    <div id="readings-tab" class="tab-content active">
+      <div class="card fade-in" style="animation-delay: 0.4s">
+        <h3 style="margin-bottom: 20px; font-weight: 600;">Передать показания</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Тип счётчика</label>
+          <div class="meter-types">
+            <div class="meter-type active" data-type="electric">
+              ⚡<br>Электричество
+            </div>
+            <div class="meter-type" data-type="gas">
+              🔥<br>Газ
+            </div>
+            <div class="meter-type" data-type="water">
+              💧<br>Вода
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="readingValue">Показания счётчика</label>
+          <input type="number" id="readingValue" class="form-input" 
+                 placeholder="Введите показания" min="0" step="0.01">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="readingNote">Комментарий (необязательно)</label>
+          <input type="text" id="readingNote" class="form-input" 
+                 placeholder="Дополнительная информация">
+        </div>
+
+        <button class="btn btn-primary" onclick="submitReading()">
+          <span id="submitText">Передать показания</span>
+          <span id="submitLoading" class="loading" style="display: none;"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="history-tab" class="tab-content">
+      <div class="card fade-in" style="animation-delay: 0.4s">
+        <h3 style="margin-bottom: 20px; font-weight: 600;">График потребления</h3>
+        <div class="chart-container">
+          <canvas id="consumptionChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card fade-in" style="animation-delay: 0.5s">
+        <h3 style="margin-bottom: 20px; font-weight: 600;">История показаний</h3>
+        <div id="historyList">
+          <div style="text-align: center; padding: 20px; color: #666;">
+            Загрузка истории...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="services-tab" class="tab-content">
+      <div class="card fade-in" style="animation-delay: 0.4s">
+        <h3 style="margin-bottom: 20px; font-weight: 600;">Дополнительные услуги</h3>
+        <div class="service-grid">
+          <div class="service-item" onclick="orderService('meter_replacement')">
+            <div class="service-icon">🔧</div>
+            <div class="service-title">Замена счётчика</div>
+            <div class="service-description">Заявка на замену или установку</div>
+          </div>
+          <div class="service-item" onclick="orderService('consultation')">
+            <div class="service-icon">💬</div>
+            <div class="service-title">Консультация</div>
+            <div class="service-description">Помощь специалиста</div>
+          </div>
+          <div class="service-item" onclick="orderService('inspection')">
+            <div class="service-icon">🔍</div>
+            <div class="service-title">Проверка счётчика</div>
+            <div class="service-description">Техническая диагностика</div>
+          </div>
+          <div class="service-item" onclick="orderService('repair')">
+            <div class="service-icon">⚙️</div>
+            <div class="service-title">Ремонт</div>
+            <div class="service-description">Устранение неисправностей</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fade-in" style="animation-delay: 0.5s">
+        <h3 style="margin-bottom: 20px; font-weight: 600;">Поддержка</h3>
+        <button class="btn btn-success" onclick="openSupport()" style="margin-bottom: 10px;">
+          📞 Связаться с оператором
+        </button>
+        <button class="btn btn-warning" onclick="openFAQ()">
+          ❓ Часто задаваемые вопросы
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Уведомление -->
-  <div id="notification" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 hidden bg-black text-white px-4 py-2 rounded-xl"></div>
+  <div class="quick-actions">
+    <button class="fab" onclick="quickReading()" title="Быстрая передача показаний">
+      ⚡
+    </button>
+  </div>
+
+  <div id="notification" class="notification">
+    <div id="notificationText"></div>
+  </div>
 
   <script src="script.js"></script>
-  <script>
-    function drawChart(readings) {
-      console.log('🎯 Рисую график на', readings.length, 'точках');
-      const labels = readings.map(r => new Date(r.date).toLocaleDateString("ru-RU"));
-      const data = readings.map(r => r.value);
-      const ctx = document.getElementById('readingChart').getContext('2d');
-
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'кВт·ч',
-            data: data,
-            borderColor: '#ffffff',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            tension: 0.3,
-            fill: true,
-            pointRadius: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              labels: {
-                color: '#ffffff'
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: {
-                color: '#ffffff'
-              },
-              grid: {
-                color: 'rgba(255,255,255,0.1)'
-              }
-            },
-            y: {
-              ticks: {
-                color: '#ffffff'
-              },
-              grid: {
-                color: 'rgba(255,255,255,0.1)'
-              }
-            }
-          }
-        }
-      });
-    }
-  </script>
 </body>
 </html>
