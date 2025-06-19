@@ -511,16 +511,9 @@ function updateDebtBlock() {
   }
 }
 
-    const html = debts.map(d => {
-        const icon = getMeterIcon(d.meter_type);
-        const amount = Math.abs(d.amount).toLocaleString();
-        return `<div style="color: red; font-weight: bold;">${icon} ${d.meter_type}: -${amount} ₽</div>`;
-    }).join('');
-    container.innerHTML = html;
 
     // 👉 Обновим сумму в "К доплате"
     const total = debts.reduce((sum, d) => sum + d.amount, 0);
     const stat = document.getElementById("statDebt");
     if (stat) stat.innerText = "-" + Math.abs(total).toLocaleString() + " ₽";
-    
-}
+
