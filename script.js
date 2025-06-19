@@ -87,6 +87,7 @@ async function loadUserStats(telegramId) {
             updateStatsDisplay(demoReadings);
             updateHistoryDisplay(demoReadings);
             updateChart(demoReadings);
+            updateDebtBlock(demoReadings);
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
