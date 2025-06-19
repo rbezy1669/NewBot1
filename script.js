@@ -87,7 +87,7 @@ async function loadUserStats(telegramId) {
             updateStatsDisplay(demoReadings);
             updateHistoryDisplay(demoReadings);
             updateChart(demoReadings);
-            updateDebtBlock(demoReadings);
+    updateDebtBlock();
         }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
@@ -96,6 +96,7 @@ async function loadUserStats(telegramId) {
         updateStatsDisplay(demoReadings);
         updateHistoryDisplay(demoReadings);
         updateChart(demoReadings);
+    updateDebtBlock();
     }
 }
 
@@ -501,15 +502,14 @@ window.addEventListener('online', function() {
 window.addEventListener('offline', function() {
     showNotification('Соединение потеряно', 'error');
 });
-function updateDebtBlock(readings) {
-    const container = document.getElementById("debtBlock");
-    if (!container) return;
-
-    const debts = readings.filter(r => r.amount < 0 && ['electric', 'gas', 'water'].includes(r.meter_type));
-    if (debts.length === 0) {
-        container.innerHTML = "<div class='text-green-600'>✅ Нет задолженностей</div>";
-        return;
-    }
+function updateDebtBlock() {
+  const stat = document.getElementById("statDebt");
+  if (stat) {
+    stat.innerText = "-3 876,55 ₽";
+    stat.style.color = "red";
+    stat.style.fontWeight = "bold";
+  }
+}
 
     const html = debts.map(d => {
         const icon = getMeterIcon(d.meter_type);
@@ -518,8 +518,9 @@ function updateDebtBlock(readings) {
     }).join('');
     container.innerHTML = html;
 
-    // 👉 Обновим сумму в "К доплате" — фиксированная
+    // 👉 Обновим сумму в "К доплате"
+    const total = debts.reduce((sum, d) => sum + d.amount, 0);
     const stat = document.getElementById("statDebt");
-    if (stat) stat.innerText = "-3 876,55 ₽";
+    if (stat) stat.innerText = "-" + Math.abs(total).toLocaleString() + " ₽";
     
 }
