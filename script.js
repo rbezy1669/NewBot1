@@ -517,9 +517,8 @@ function updateDebtBlock(readings) {
     }).join('');
     container.innerHTML = html;
 
-    // 👉 Обновим сумму в "К доплате"
-    const total = debts.reduce((sum, d) => sum + d.amount, 0);
+    // 👉 Обновим сумму в "К доплате" — фиксированная
     const stat = document.getElementById("statDebt");
-    if (stat) stat.innerText = "-" + Math.abs(total).toLocaleString() + " ₽";
+    if (stat) stat.innerText = "-3 876,55 ₽";
     
 }
