@@ -30,4 +30,3 @@ run = ["sh", "-c", "python start_web.py"]
 
 [[ports]]
 localPort = 5000
-externalPort = 80

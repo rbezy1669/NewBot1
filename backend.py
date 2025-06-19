@@ -146,14 +146,18 @@ async def oauth_callback(request: Request):
                     auth_user = AuthUser(telegram_id=state)
                     db.add(auth_user)
                 
-                auth_user.gosuslugi_id = user_data.get('id')
-                auth_user.full_name = user_data.get('fullName', '')
-                auth_user.email = user_data.get('email', '')
-                auth_user.inn = user_data.get('inn', '')
-                auth_user.snils = user_data.get('snils', '')
-                auth_user.auth_data = json.dumps(user_data, ensure_ascii=False)
-                auth_user.is_verified = True
-                auth_user.last_login = datetime.now()
+                # Update user attributes using proper SQLAlchemy approach
+                for attr, value in {
+                    'gosuslugi_id': user_data.get('id'),
+                    'full_name': user_data.get('fullName', ''),
+                    'email': user_data.get('email', ''),
+                    'inn': user_data.get('inn', ''),
+                    'snils': user_data.get('snils', ''),
+                    'auth_data': json.dumps(user_data, ensure_ascii=False),
+                    'is_verified': True,
+                    'last_login': datetime.now()
+                }.items():
+                    setattr(auth_user, attr, value)
                 
                 db.commit()
             finally:

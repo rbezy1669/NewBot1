@@ -1,155 +1,183 @@
-# Telegram Bot Энергосбыт - Полная версия
+# Russian Energy Platform
 
-Полный Telegram бот для службы Энергосбыт с поддержкой Mini App, PostgreSQL и SQLite fallback.
+## Overview
 
-## Возможности
+A comprehensive Telegram-based energy utility platform that provides customer services through a Telegram bot and integrated Mini App. The platform enables customers to submit meter readings, view consumption history, request services, and access support directly within Telegram's ecosystem.
 
-- 📱 **Telegram Mini App** - полнофункциональный личный кабинет внутри Telegram
-- 📊 **Передача показаний** - через бота и Mini App
-- 📈 **История показаний** - просмотр последних передач
-- 🔧 **Заказ услуг** - замена счетчиков, поверки, консультации
-- 📞 **Служба поддержки** - контакты и чат
-- 🗄️ **База данных** - PostgreSQL с fallback на SQLite
-- 🎨 **Адаптивная тема** - автоматическое следование теме Telegram
+## Features
 
-## Быстрый старт
+### Telegram Mini App
+- **Modern Interface**: Glass-morphism design with smooth animations
+- **Multi-utility Support**: Electric, gas, and water meter readings
+- **Real-time Statistics**: Dashboard with consumption charts and analytics
+- **Service Requests**: Meter replacement, consultations, inspections, repairs
+- **Responsive Design**: Adapts to Telegram's light/dark themes
 
-### 1. Установка зависимостей
+### Backend API
+- **FastAPI Framework**: High-performance async REST API
+- **PostgreSQL Database**: Robust data persistence with SQLAlchemy ORM
+- **OAuth Integration**: Secure authentication with Gosuslugi (Russian government services)
+- **CORS Support**: Cross-origin requests for web integration
 
+### Bot Service
+- **Interactive Commands**: Intuitive Telegram bot interface
+- **Mini App Integration**: Seamless data exchange between bot and web app
+- **Service Management**: Complete customer service workflow
+
+## Tech Stack
+
+- **Backend**: Python 3.11, FastAPI, SQLAlchemy, PostgreSQL
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+), Chart.js
+- **Integration**: Telegram WebApp API, Telegram Bot API
+- **Database**: PostgreSQL with environment-based configuration
+- **Deployment**: Replit-optimized with automatic scaling
+
+## Quick Start
+
+### Prerequisites
+- Python 3.11+
+- PostgreSQL database
+- Telegram Bot Token
+- Gosuslugi OAuth credentials (optional)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-pip install -r bot_requirements.txt
+git clone https://github.com/your-username/russian-energy-platform.git
+cd russian-energy-platform
 ```
 
-### 2. Настройка переменных окружения
-
-Создайте файл `.env` или установите переменные:
-
+2. Install dependencies:
 ```bash
-# Обязательные
-BOT_TOKEN=your_telegram_bot_token_here
-MINI_APP_URL=https://your-domain.com
-
-# Опциональные (для PostgreSQL)
-DATABASE_URL=postgresql://user:password@localhost/energybot
-
-# Для OAuth Госуслуги (опционально)
-GOSUSLUGI_CLIENT_ID=your_client_id
-GOSUSLUGI_CLIENT_SECRET=your_client_secret
-REDIRECT_URI=https://your-domain.com/oauth/callback
+pip install -r requirements.txt
 ```
 
-### 3. Получение токена бота
-
-1. Напишите [@BotFather](https://t.me/botfather) в Telegram
-2. Создайте нового бота командой `/newbot`
-3. Следуйте инструкциям и получите токен
-4. Установите токен в переменную `BOT_TOKEN`
-
-### 4. Настройка Mini App
-
-1. В [@BotFather](https://t.me/botfather) выберите вашего бота
-2. Нажмите "Bot Settings" → "Menu Button"
-3. Укажите URL вашего Mini App
-4. Скопируйте файл `miniapp_index.html` на ваш веб-сервер
-
-### 5. Запуск
-
-#### Запуск только бота:
+3. Set up environment variables:
 ```bash
-python telegram_bot_complete.py bot
+# Database
+export DATABASE_URL="postgresql://user:password@localhost/dbname"
+
+# Telegram Bot (optional)
+export BOT_TOKEN="your_telegram_bot_token"
+
+# Gosuslugi OAuth (optional)
+export GOSUSLUGI_CLIENT_ID="your_client_id"
+export GOSUSLUGI_CLIENT_SECRET="your_client_secret"
+export REDIRECT_URI="http://localhost:5000/callback"
 ```
 
-#### Запуск только веб-сервера:
+4. Initialize the database:
 ```bash
-python telegram_bot_complete.py web
+python -c "from models import create_tables; create_tables()"
 ```
 
-#### Запуск в Replit:
-Файл автоматически определит среду и запустится соответствующим образом.
-
-## Структура проекта
-
-```
-telegram-energy-bot/
-├── telegram_bot_complete.py  # Основной файл бота и веб-сервера
-├── miniapp_index.html        # Mini App интерфейс
-├── bot_requirements.txt      # Зависимости Python
-└── README.md                # Данная инструкция
+5. Start the application:
+```bash
+python start_web.py
 ```
 
-## Функционал бота
+The application will be available at `http://localhost:5000`
 
-### Команды бота:
-- `/start` - Начать работу с ботом
-- `/help` - Справка по командам
+## API Documentation
 
-### Кнопки меню:
-- 📱 **Открыть личный кабинет** - запуск Mini App
-- 📊 **Передать показания** - быстрая передача через бота
-- 📈 **История показаний** - просмотр последних 10 записей
-- 🔧 **Замена счётчика** - заявка на замену/поверку
-- 📞 **Поддержка** - контактная информация
+Once running, visit `http://localhost:5000/docs` for interactive API documentation.
 
-### Mini App разделы:
-- **Показания** - передача показаний с выбором типа счетчика
-- **История** - детальная история с датами и статусами
-- **Услуги** - заказ различных услуг одним нажатием
-- **Поддержка** - контакты и прямая связь с поддержкой
+### Key Endpoints
 
-## База данных
+- `POST /api/readings` - Submit meter readings
+- `GET /api/readings/{telegram_id}` - Get reading history
+- `POST /api/service-request` - Create service requests
+- `POST /api/subscribe` - Email subscriptions
+- `GET /api/stats` - Platform statistics
 
-Бот поддерживает два режима работы с БД:
+## Project Structure
 
-### PostgreSQL (рекомендуется)
-При наличии `DATABASE_URL` автоматически используется PostgreSQL с полным функционалом.
+```
+russian-energy-platform/
+├── backend.py              # FastAPI application
+├── models.py               # Database models
+├── bot.py                  # Telegram bot
+├── start_web.py           # Web server startup
+├── static/                # Web assets
+│   ├── index.html         # Mini App interface
+│   ├── script.js          # Frontend logic
+│   └── style.css          # Styling
+├── database.py            # Database utilities
+├── requirements.txt       # Python dependencies
+└── README.md              # This file
+```
 
-### SQLite (fallback)
-При отсутствии PostgreSQL автоматически создается локальная база `energybot.db`.
+## Development
 
-## API endpoints
+### Database Migrations
 
-Веб-сервер предоставляет REST API для Mini App:
+The application automatically creates tables on startup. For schema changes:
 
-- `POST /api/readings` - передача показаний
-- `GET /api/readings/{telegram_id}` - получение истории
-- `POST /api/service-requests` - создание заявки на услугу
-- `GET /api/health` - проверка состояния API
+1. Update models in `models.py`
+2. Restart the application
+3. Tables will be updated automatically
 
-## Безопасность
+### Adding New Features
 
-- Все API endpoints проверяют корректность данных
-- Логирование всех операций
-- Защита от SQL-инъекций через SQLAlchemy
-- CORS настроен для безопасной работы Mini App
+1. Update backend API in `backend.py`
+2. Modify frontend in `static/`
+3. Update bot commands in `bot.py`
+4. Test integration end-to-end
 
-## Деплой на Replit
+## Deployment
 
-1. Создайте новый Replit проект
-2. Загрузите файлы проекта
-3. Установите переменную `BOT_TOKEN` в Secrets
-4. При наличии PostgreSQL установите `DATABASE_URL`
-5. Запустите проект
+### Replit Deployment
 
-## Кастомизация
+The project is optimized for Replit deployment:
 
-### Изменение интерфейса:
-Отредактируйте `miniapp_index.html` - все стили встроены в файл.
+1. Import the repository to Replit
+2. Set environment variables in Replit Secrets
+3. Run the project - it will automatically start on port 5000
 
-### Добавление функций:
-Расширьте класс `DatabaseManager` и добавьте новые API endpoints.
+### Docker Deployment
 
-### Настройка темы:
-Mini App автоматически адаптируется к теме Telegram пользователя.
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "start_web.py"]
+```
 
-## Поддержка
+## Contributing
 
-При возникновении проблем проверьте:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-1. Корректность токена бота
-2. Доступность базы данных
-3. Настройки CORS для Mini App
-4. Логи в консоли для диагностики
+## License
 
-## Лицензия
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-Этот проект создан для демонстрации возможностей Telegram Bot API и Mini Apps.
+## Support
+
+For support and questions:
+- Create an issue in this repository
+- Contact the development team
+- Check the documentation at `/docs`
+
+## Changelog
+
+### Version 2.0.0 (June 19, 2025)
+- Complete platform redesign with modern UI
+- PostgreSQL database migration
+- Enhanced API with comprehensive endpoints
+- Multi-utility support (electric, gas, water)
+- Real-time charts and analytics
+- Improved error handling and user experience
+
+### Version 1.0.0 (June 18, 2025)
+- Initial release
+- Basic meter reading functionality
+- Telegram bot integration
+- SQLite database support

@@ -417,7 +417,8 @@ async function orderService(serviceType) {
                 tg.HapticFeedback.impactOccurred('light');
             }
         } else {
-            throw new Error('Ошибка при создании заявки');
+            const errorData = await response.json().catch(() => ({ detail: 'Неизвестная ошибка' }));
+            throw new Error(errorData.detail || 'Ошибка при создании заявки');
         }
         
     } catch (error) {
