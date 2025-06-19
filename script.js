@@ -55,7 +55,7 @@ async function loadUserData() {
         
     } catch (error) {
         console.error('Ошибка загрузки данных пользователя:', error);
-        showNotification('Ошибка загрузки данных пользователя', 'error');
+        // showNotification('Ошибка загрузки данных пользователя', 'error');
     }
 }
 
