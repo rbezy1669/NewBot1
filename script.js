@@ -80,6 +80,7 @@ async function loadUserStats(telegramId) {
             updateStatsDisplay(data.readings || []);
             updateHistoryDisplay(data.readings || []);
             updateChart(data.readings || []);
+            updateDebtBlock(data.readings || []);
         } else {
             // Generate demo data for display
             const demoReadings = generateDemoReadings();
@@ -499,3 +500,20 @@ window.addEventListener('online', function() {
 window.addEventListener('offline', function() {
     showNotification('Соединение потеряно', 'error');
 });
+function updateDebtBlock(readings) {
+    const container = document.getElementById("debtBlock");
+    if (!container) return;
+
+    const debts = readings.filter(r => r.amount < 0 && ['electric', 'gas', 'water'].includes(r.meter_type));
+    if (debts.length === 0) {
+        container.innerHTML = "<div class='text-green-600'>✅ Нет задолженностей</div>";
+        return;
+    }
+
+    const html = debts.map(d => {
+        const icon = getMeterIcon(d.meter_type);
+        const amount = Math.abs(d.amount).toLocaleString();
+        return `<div style="color: red; font-weight: bold;">${icon} ${d.meter_type}: -${amount} ₽</div>`;
+    }).join('');
+    container.innerHTML = html;
+}
