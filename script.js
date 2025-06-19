@@ -80,7 +80,7 @@ async function loadUserStats(telegramId) {
             updateStatsDisplay(data.readings || []);
             updateHistoryDisplay(data.readings || []);
             updateChart(data.readings || []);
-            updateDebtBlock(data.readings || []);
+            updateDebtBlock();
         } else {
             // Generate demo data for display
             const demoReadings = generateDemoReadings();
