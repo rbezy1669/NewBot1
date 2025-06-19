@@ -1,6 +1,7 @@
 """
 FastAPI Backend для обработки OAuth авторизации через Госуслуги
-и предоставления API для веб-портала
+и предоставления API для веб-портала и Telegram Mini App
+Использует PostgreSQL через SQLAlchemy
 """
 
 import os
@@ -17,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from models import db_manager, get_db, User, MeterReading, ServiceRequest, EmailSubscription, AuthUser, SystemLog
+from models import DatabaseManager, get_db, User, MeterReading, ServiceRequest, EmailSubscription, AuthUser, SystemLog
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -30,32 +31,7 @@ REDIRECT_URI = os.getenv('REDIRECT_URI', 'http://0.0.0.0:5000/callback')
 TOKEN_URL = 'https://esia.gosuslugi.ru/aas/oauth2/te'
 USERINFO_URL = 'https://esia.gosuslugi.ru/rs/prns'
 
-app = FastAPI(title="Энергосбыт API", description="API для портала энергосбыта")
-
-# CORS настройки
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Модели данных
-class EmailSubscription(BaseModel):
-    email: EmailStr
-
-class UserInfo(BaseModel):
-    telegram_id: Optional[int] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    inn: Optional[str] = None
-
-class ReadingSubmission(BaseModel):
-    telegram_id: int
-    reading_value: int
-
-# Инициализация FastAPI приложения
+# Создание приложения FastAPI
 app = FastAPI(
     title="Энергосбыт Backend API",
     description="API для веб-портала и Telegram Mini App",
@@ -71,6 +47,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Глобальный экземпляр менеджера БД
+db_manager = DatabaseManager()
+
+# Модели данных
+class EmailSubscription(BaseModel):
+    email: EmailStr
+
+class UserInfo(BaseModel):
+    telegram_id: Optional[int] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    inn: Optional[str] = None
+
+class ReadingSubmission(BaseModel):
+    telegram_id: int
+    reading_value: int
+    meter_type: Optional[str] = 'electric'
+
+class ServiceRequestModel(BaseModel):
+    telegram_id: int
+    service_type: str
+    description: Optional[str] = None
+
 # Инициализация PostgreSQL БД при старте
 @app.on_event("startup")
 async def startup_event():
@@ -81,117 +80,14 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise e
-    
-    def init_database(self):
-        """Инициализация базы данных"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Таблица авторизованных пользователей
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS auth_users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                telegram_id TEXT UNIQUE,
-                gosuslugi_id TEXT,
-                full_name TEXT,
-                email TEXT,
-                inn TEXT,
-                phone TEXT,
-                raw_data TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Таблица подписок на email
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS email_subscriptions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE
-            )
-        ''')
-        
-        # Таблица показаний (для синхронизации с ботом)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS readings_sync (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                telegram_id INTEGER,
-                reading_value INTEGER,
-                submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                source TEXT DEFAULT 'backend'
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
-    
-    def save_user_auth(self, telegram_id: str, user_data: dict):
-        """Сохранение данных авторизации пользователя"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT OR REPLACE INTO auth_users 
-            (telegram_id, gosuslugi_id, full_name, email, inn, phone, raw_data, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            telegram_id,
-            user_data.get('id'),
-            user_data.get('fullName', ''),
-            user_data.get('email', ''),
-            user_data.get('inn', ''),
-            user_data.get('mobile', ''),
-            json.dumps(user_data, ensure_ascii=False),
-            datetime.now().isoformat()
-        ))
-        
-        conn.commit()
-        conn.close()
-    
-    def add_email_subscription(self, email: str) -> bool:
-        """Добавление email подписки"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute('''
-                INSERT INTO email_subscriptions (email)
-                VALUES (?)
-            ''', (email,))
-            
-            conn.commit()
-            conn.close()
-            return True
-        except sqlite3.IntegrityError:
-            # Email уже существует
-            return False
-    
-    def get_user_by_telegram_id(self, telegram_id: str) -> Optional[dict]:
-        """Получение пользователя по Telegram ID"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT * FROM auth_users WHERE telegram_id = ?
-        ''', (telegram_id,))
-        
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            columns = [desc[0] for desc in cursor.description]
-            return dict(zip(columns, row))
-        return None
 
-# Инициализация менеджера БД
-db_manager = DatabaseManager()
+# Статические файлы
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Главная страница (редирект на статический сайт)"""
-    return RedirectResponse(url="/index.html")
+    return RedirectResponse(url="/static/index.html")
 
 @app.get("/callback")
 async def oauth_callback(request: Request):
@@ -216,113 +112,122 @@ async def oauth_callback(request: Request):
             status_code=400
         )
     
-    if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing authorization code or state")
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code not provided")
     
     try:
         # Обмен кода на токен
         token_data = {
             'grant_type': 'authorization_code',
             'code': code,
+            'redirect_uri': REDIRECT_URI,
             'client_id': CLIENT_ID,
             'client_secret': CLIENT_SECRET,
-            'redirect_uri': REDIRECT_URI,
         }
         
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        token_response = requests.post(TOKEN_URL, data=token_data, headers=headers, timeout=10)
+        token_response = requests.post(TOKEN_URL, data=token_data)
+        token_info = token_response.json()
         
-        if token_response.status_code != 200:
-            logger.error(f"Token exchange failed: {token_response.text}")
-            raise HTTPException(status_code=400, detail="Token exchange failed")
-        
-        tokens = token_response.json()
-        access_token = tokens.get("access_token")
-        
-        if not access_token:
-            raise HTTPException(status_code=400, detail="No access token received")
+        if 'access_token' not in token_info:
+            raise HTTPException(status_code=400, detail="Failed to get access token")
         
         # Получение информации о пользователе
-        user_headers = {"Authorization": f"Bearer {access_token}"}
-        user_response = requests.get(USERINFO_URL, headers=user_headers, timeout=10)
+        headers = {'Authorization': f"Bearer {token_info['access_token']}"}
+        user_response = requests.get(USERINFO_URL, headers=headers)
+        user_data = user_response.json()
         
-        if user_response.status_code != 200:
-            logger.error(f"User info request failed: {user_response.text}")
-            raise HTTPException(status_code=400, detail="Failed to get user info")
+        # Сохранение данных пользователя в БД через SQLAlchemy
+        if state:  # Telegram ID
+            db = next(get_db())
+            try:
+                # Создание или обновление записи пользователя
+                auth_user = db.query(AuthUser).filter(AuthUser.telegram_id == state).first()
+                if not auth_user:
+                    auth_user = AuthUser(telegram_id=state)
+                    db.add(auth_user)
+                
+                auth_user.gosuslugi_id = user_data.get('id')
+                auth_user.full_name = user_data.get('fullName', '')
+                auth_user.email = user_data.get('email', '')
+                auth_user.inn = user_data.get('inn', '')
+                auth_user.snils = user_data.get('snils', '')
+                auth_user.auth_data = json.dumps(user_data, ensure_ascii=False)
+                auth_user.is_verified = True
+                auth_user.last_login = datetime.now()
+                
+                db.commit()
+            finally:
+                db.close()
         
-        user_info = user_response.json()
-        
-        # Сохранение данных пользователя
-        db_manager.save_user_auth(state, user_info)
-        
-        logger.info(f"User {state} successfully authorized via Gosuslugi")
-        
-        # Успешная страница
         return HTMLResponse(
-            content=f"""
+            content="""
             <html>
-                <head>
-                    <title>Авторизация успешна</title>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                        .success {{ color: #4CAF50; }}
-                        .info {{ background: #f0f8ff; padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 400px; }}
-                    </style>
-                </head>
+                <head><title>Авторизация успешна</title></head>
                 <body>
-                    <h1 class="success">✅ Авторизация успешна!</h1>
-                    <div class="info">
-                        <p>Добро пожаловать, <strong>{user_info.get('fullName', 'Пользователь')}</strong>!</p>
-                        <p>Ваш аккаунт успешно связан с ботом Энергосбыт.</p>
-                        <p>Теперь вы можете вернуться к боту для получения расширенных возможностей.</p>
-                    </div>
-                    <p><a href="https://t.me/your_bot_username" style="color: #0088cc; text-decoration: none; font-weight: bold;">🤖 Вернуться к боту</a></p>
+                    <h1>Авторизация через Госуслуги успешна!</h1>
+                    <p>Вы можете закрыть это окно и вернуться к боту.</p>
+                    <script>
+                        setTimeout(function() {
+                            window.close();
+                        }, 3000);
+                    </script>
                 </body>
             </html>
             """
         )
         
-    except requests.RequestException as e:
-        logger.error(f"Network error during OAuth: {e}")
-        raise HTTPException(status_code=500, detail="Network error during authorization")
     except Exception as e:
-        logger.error(f"Unexpected error during OAuth: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"OAuth callback error: {str(e)}")
+        return HTMLResponse(
+            content=f"""
+            <html>
+                <head><title>Ошибка</title></head>
+                <body>
+                    <h1>Произошла ошибка</h1>
+                    <p>Не удалось завершить авторизацию: {str(e)}</p>
+                </body>
+            </html>
+            """,
+            status_code=500
+        )
 
 @app.post("/api/subscribe")
-async def subscribe_email(subscription: EmailSubscription):
+async def subscribe_email(subscription: EmailSubscription, db: Session = Depends(get_db)):
     """API для подписки на email рассылку"""
     try:
         success = db_manager.add_email_subscription(subscription.email)
-        
         if success:
-            logger.info(f"New email subscription: {subscription.email}")
-            return {"status": "success", "message": "Подписка успешно оформлена"}
+            return {"message": "Подписка оформлена успешно", "status": "success"}
         else:
-            return {"status": "info", "message": "Этот email уже подписан на рассылку"}
-            
+            return {"message": "Email уже подписан", "status": "info"}
     except Exception as e:
-        logger.error(f"Error subscribing email {subscription.email}: {e}")
+        logger.error(f"Email subscription error: {str(e)}")
         raise HTTPException(status_code=500, detail="Ошибка при оформлении подписки")
 
 @app.get("/api/user/{telegram_id}")
-async def get_user_info(telegram_id: str):
+async def get_user_info(telegram_id: str, db: Session = Depends(get_db)):
     """Получение информации о пользователе по Telegram ID"""
-    user = db_manager.get_user_by_telegram_id(telegram_id)
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    
-    # Убираем чувствительные данные
-    safe_user = {
-        "full_name": user.get("full_name"),
-        "email": user.get("email"),
-        "is_verified": bool(user.get("gosuslugi_id")),
-        "created_at": user.get("created_at")
-    }
-    
-    return safe_user
+    try:
+        user = db.query(User).filter(User.telegram_id == telegram_id).first()
+        auth_user = db.query(AuthUser).filter(AuthUser.telegram_id == telegram_id).first()
+        
+        if not user and not auth_user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        user_info = {
+            "telegram_id": telegram_id,
+            "full_name": auth_user.full_name if auth_user else (user.full_name if user else None),
+            "email": auth_user.email if auth_user else (user.email if user else None),
+            "inn": auth_user.inn if auth_user else (user.inn if user else None),
+            "is_verified": auth_user.is_verified if auth_user else False
+        }
+        
+        return user_info
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user info error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка получения данных пользователя")
 
 @app.get("/api/health")
 async def health_check():
@@ -330,119 +235,89 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "Энергосбыт Backend API"
+        "version": "2.0.0"
     }
 
 @app.post("/api/readings")
-async def submit_reading(request: Request):
+async def submit_reading(submission: ReadingSubmission, db: Session = Depends(get_db)):
     """API для передачи показаний от Mini App"""
     try:
-        data = await request.json()
-        telegram_id = data.get('telegram_id')
-        reading_value = data.get('reading_value')
-        user_data = data.get('user_data', {})
-        
-        if not telegram_id or not reading_value:
-            raise HTTPException(status_code=400, detail="Не указаны обязательные данные")
-        
-        # Сохранение показания в базу данных
-        conn = sqlite3.connect("readings.db")
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO meter_readings (user_id, reading_value, submission_method)
-            VALUES (?, ?, 'mini_app')
-        ''', (str(telegram_id), int(reading_value)))
-        
-        conn.commit()
-        conn.close()
-        
-        logger.info(f"Reading submitted: user {telegram_id}, value {reading_value}")
+        reading = db_manager.add_reading(
+            user_id=str(submission.telegram_id),
+            reading_value=submission.reading_value,
+            meter_type=submission.meter_type,
+            method='mini_app'
+        )
         
         return {
-            "status": "success",
             "message": "Показания успешно переданы",
-            "reading_id": cursor.lastrowid,
-            "timestamp": datetime.now().isoformat()
+            "reading_id": reading.id,
+            "status": "success"
         }
-        
     except Exception as e:
-        logger.error(f"Error submitting reading: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка сохранения показаний")
+        logger.error(f"Submit reading error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка при передаче показаний")
 
 @app.get("/api/readings/{telegram_id}")
-async def get_readings_history(telegram_id: str):
+async def get_readings_history(telegram_id: str, db: Session = Depends(get_db)):
     """Получение истории показаний пользователя"""
     try:
-        conn = sqlite3.connect("readings.db")
-        cursor = conn.cursor()
+        readings = db_manager.get_readings_history(str(telegram_id), limit=20)
+        readings_data = []
         
-        cursor.execute('''
-            SELECT reading_value, reading_date, submission_method, status
-            FROM meter_readings 
-            WHERE user_id = ? 
-            ORDER BY reading_date DESC 
-            LIMIT 12
-        ''', (telegram_id,))
-        
-        readings = []
-        for row in cursor.fetchall():
-            readings.append({
-                "value": row[0],
-                "date": row[1],
-                "method": row[2],
-                "status": row[3]
+        for reading in readings:
+            readings_data.append({
+                "id": reading.id,
+                "reading_value": reading.reading_value,
+                "meter_type": reading.meter_type,
+                "submission_method": reading.submission_method,
+                "status": reading.status,
+                "reading_date": reading.reading_date.isoformat() if reading.reading_date else None,
+                "created_at": reading.created_at.isoformat() if reading.created_at else None
             })
         
-        conn.close()
-        
-        return readings
-        
+        return {"readings": readings_data}
     except Exception as e:
-        logger.error(f"Error getting readings for user {telegram_id}: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка получения истории")
+        logger.error(f"Get readings history error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка получения истории показаний")
 
-@app.get("/api/stats")
-async def get_stats():
-    """Получение базовой статистики"""
+@app.post("/api/service-request")
+async def create_service_request(request: ServiceRequestModel, db: Session = Depends(get_db)):
+    """API для создания заявки на услугу"""
     try:
-        conn = sqlite3.connect(db_manager.db_path)
-        cursor = conn.cursor()
-        
-        # Количество авторизованных пользователей
-        cursor.execute("SELECT COUNT(*) FROM auth_users")
-        auth_users_count = cursor.fetchone()[0]
-        
-        # Количество подписчиков
-        cursor.execute("SELECT COUNT(*) FROM email_subscriptions WHERE is_active = TRUE")
-        subscribers_count = cursor.fetchone()[0]
-        
-        conn.close()
+        service_request = db_manager.add_service_request(
+            user_id=str(request.telegram_id),
+            service_type=request.service_type,
+            description=request.description
+        )
         
         return {
-            "authorized_users": auth_users_count,
-            "email_subscribers": subscribers_count,
+            "message": "Заявка создана успешно",
+            "request_id": service_request.id,
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Create service request error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка при создании заявки")
+
+@app.get("/api/stats")
+async def get_stats(db: Session = Depends(get_db)):
+    """Получение базовой статистики"""
+    try:
+        total_users = db.query(User).count()
+        total_readings = db.query(MeterReading).count()
+        total_requests = db.query(ServiceRequest).count()
+        
+        return {
+            "total_users": total_users,
+            "total_readings": total_readings,
+            "total_service_requests": total_requests,
             "timestamp": datetime.now().isoformat()
         }
-        
     except Exception as e:
-        logger.error(f"Error getting stats: {e}")
+        logger.error(f"Get stats error: {str(e)}")
         raise HTTPException(status_code=500, detail="Ошибка получения статистики")
-
-# Статические файлы (HTML, CSS, JS)
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    
-    print("🌐 Запуск FastAPI сервера...")
-    print(f"📱 Redirect URI: {REDIRECT_URI}")
-    print("🔗 Веб-портал будет доступен по адресу: http://0.0.0.0:5000")
-    
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=5000,
-        reload=False,
-        access_log=True
-    )
+    uvicorn.run(app, host="0.0.0.0", port=5000)
