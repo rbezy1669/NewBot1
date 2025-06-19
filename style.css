@@ -389,3 +389,23 @@ footer {
         font-size: 13px;
     }
 }
+
+.meter-type {
+  padding: 15px 10px;
+  background: #f8f9fa;         /* светлый фон */
+  border: 2px solid transparent;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  color: #333;                 /* 👈 ВОТ ЭТА СТРОКА — делает текст видимым */
+  font-weight: 600;
+}
+
+.meter-type.active {
+  border-color: var(--energy-primary);
+  background: rgba(10, 61, 98, 0.1);
+  color: var(--energy-primary);  /* акцентный синий цвет */
+}
+
