@@ -504,20 +504,10 @@ function updateDebtBlock(readings) {
     const container = document.getElementById("debtBlock");
     if (!container) return;
 
-    let debts = readings.filter(r =>
-        ['electric', 'gas', 'water'].includes(r.meter_type)
-    );
-
-    // 🛠️ Если ни в одном счётчике нет долга — подставим фиктивные данные
-    if (debts.every(d => d.amount >= 0)) {
-        debts = [
-            { meter_type: 'electric', amount: -1200 },
-            { meter_type: 'gas', amount: -450 },
-            { meter_type: 'water', amount: -300 }
-        ];
-    } else {
-        // Показываем только те, где действительно есть долг
-        debts = debts.filter(d => d.amount < 0);
+    const debts = readings.filter(r => r.amount < 0 && ['electric', 'gas', 'water'].includes(r.meter_type));
+    if (debts.length === 0) {
+        container.innerHTML = "<div class='text-green-600'>✅ Нет задолженностей</div>";
+        return;
     }
 
     const html = debts.map(d => {
@@ -525,7 +515,11 @@ function updateDebtBlock(readings) {
         const amount = Math.abs(d.amount).toLocaleString();
         return `<div style="color: red; font-weight: bold;">${icon} ${d.meter_type}: -${amount} ₽</div>`;
     }).join('');
-
     container.innerHTML = html;
-}
 
+    // 👉 Обновим сумму в "К доплате"
+    const total = debts.reduce((sum, d) => sum + d.amount, 0);
+    const stat = document.getElementById("statDebt");
+    if (stat) stat.innerText = "-" + Math.abs(total).toLocaleString() + " ₽";
+    
+}
