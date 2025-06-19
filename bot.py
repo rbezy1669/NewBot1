@@ -4,6 +4,8 @@ Telegram Bot for Russian Energy Platform
 """
 
 import os
+from dotenv import load_dotenv
+load_dotenv()   
 import logging
 import asyncio
 import aiohttp
@@ -19,7 +21,7 @@ except ImportError as e:
     TELEGRAM_AVAILABLE = False
 
 # Configuration
-BOT_TOKEN = os.getenv('7807810519:AAGlq6BQhrOiLJe1Obl0H0-nKoHk0KLfsmw')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:5000')
 MINI_APP_URL = f"{API_BASE_URL}/static/index.html"
 
