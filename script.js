@@ -510,5 +510,6 @@ function updateDebtBlock() {
     stat.style.fontWeight = "bold";
   }
 }
+}
 
 
