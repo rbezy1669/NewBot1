@@ -16,13 +16,39 @@ author = "agent"
 task = "workflow.run"
 args = "Russian Energy Platform"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend API"
+
 [[workflows.workflow]]
 name = "Russian Energy Platform"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Russian Energy Platform"
+
+[[workflows.workflow]]
+name = "Telegram Bot"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python bot.py"
+
+[[workflows.workflow]]
+name = "Backend API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_web.py"
+waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "python start_web.py"]
