@@ -512,8 +512,3 @@ function updateDebtBlock() {
 }
 
 
-    // 👉 Обновим сумму в "К доплате"
-    const total = debts.reduce((sum, d) => sum + d.amount, 0);
-    const stat = document.getElementById("statDebt");
-    if (stat) stat.innerText = "-" + Math.abs(total).toLocaleString() + " ₽";
-
