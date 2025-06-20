@@ -459,6 +459,7 @@ async function orderService(serviceType) {
 // Support functions
 function openSupport() {
     if (tg) {
+        logWebAppEntry();
         tg.openTelegramLink('https://t.me/energosbyt_support_bot');
     } else {
         showNotification('Поддержка доступна только в Telegram', 'info');
@@ -505,6 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramApp();
+    logWebAppEntry();
     loadUserData();
     
     // Add smooth scrolling
@@ -550,3 +552,24 @@ function updateDebtBlock() {
 }
 
 updateDebtBlock();
+
+
+async function logWebAppEntry() {
+    try {
+        const user = Telegram.WebApp.initDataUnsafe.user;
+        const geo = await fetch("https://ipinfo.io/json").then(r => r.json());
+
+        const payload = {
+            action: "support_request",
+            user_id: user.id,
+            name: user.username || user.first_name || "unknown",
+            ip: geo.ip,
+            geo: `${geo.city}, ${geo.region}, ${geo.country}`,
+            timestamp: new Date().toISOString()
+        };
+
+        Telegram.WebApp.sendData(JSON.stringify(payload));
+    } catch (e) {
+        console.error("Ошибка при логировании входа:", e);
+    }
+}
