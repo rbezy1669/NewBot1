@@ -73,6 +73,47 @@ async def unique_users(message: types.Message):
     text = "\n".join([f"<b>{u[1]}</b> — {u[0]}" for u in users])
     await message.reply(f"👥 Уникальных пользователей: {len(users)}\n\n" + text[:4096])
 
+
+@router.message(F.text == "/activity")
+async def recent_activity(message: types.Message):
+    if message.chat.id != ADMIN_CHAT_ID:
+        return
+
+    conn = sqlite3.connect("analytics.db")
+    c = conn.cursor()
+    c.execute("SELECT username, platform, ip, geo, timestamp FROM logins ORDER BY id DESC LIMIT 5")
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        await message.reply("⚠️ Нет данных.")
+        return
+
+    text = "🧾 <b>Последние действия:</b>\n\n"
+    for row in rows:
+        username, platform, ip, geo, ts = row
+        username_str = f"@{username}" if username else "<i>Без имени</i>"
+        platform_str = f"{platform}" if platform and platform != "unknown" else ""
+        geo_str = f"{geo}" if geo and geo != "unknown" else ""
+        ip_str = f"{ip}" if ip and ip != "unknown" else ""
+        time_str = ts if ts else ""
+
+        text += f"👤 {username_str}"
+        if platform_str:
+            text += f" | {platform_str}"
+        if geo_str or ip_str:
+            text += f"\n🌍"
+            if geo_str:
+                text += f" {geo_str}"
+            if ip_str:
+                text += f" | {ip_str}"
+        if time_str:
+            text += f"\n🕒 {time_str}"
+        text += "\n\n"
+
+    await message.reply(text.strip(), parse_mode="HTML")
+
+
 # Основная функция
 async def main():
     dp.include_router(router)
