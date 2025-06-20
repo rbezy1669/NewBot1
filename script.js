@@ -1,3 +1,29 @@
+
+try {
+  const user = Telegram.WebApp.initDataUnsafe.user;
+  const platform = Telegram.WebApp.platform;
+  const userAgent = navigator.userAgent;
+  const language = navigator.language;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  fetch("/api/track-user", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: user?.id,
+      username: user?.username,
+      first_name: user?.first_name,
+      last_name: user?.last_name,
+      platform,
+      userAgent,
+      language,
+      timezone
+    })
+  });
+} catch (e) {
+  console.log("Tracking error:", e);
+}
+
 // Global variables
 let tg = window.Telegram?.WebApp;
 let currentUser = null;

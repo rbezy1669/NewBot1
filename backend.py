@@ -325,3 +325,87 @@ async def get_stats(db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
+
+@app.post("/api/track-user")
+async def track_user(request: Request):
+    import httpx, sqlite3
+    data = await request.json()
+    ip = request.headers.get("x-forwarded-for", request.client.host)
+    user_id = data.get("user_id", "-")
+    username = data.get("username", "-")
+    first_name = data.get("first_name", "-")
+    last_name = data.get("last_name", "-")
+    platform = data.get("platform", "-")
+    user_agent = data.get("userAgent", "-")
+    language = data.get("language", "-")
+    timezone = data.get("timezone", "-")
+
+    # Геолокация по IP
+    try:
+        async with httpx.AsyncClient() as client:
+            geo = await client.get(f"https://ipapi.co/{ip}/json/")
+            if geo.status_code == 200:
+                geo_data = geo.json()
+                location = f"{geo_data.get('city', '')}, {geo_data.get('region', '')}, {geo_data.get('country_name', '')}"
+                isp = geo_data.get("org", "-")
+            else:
+                location = "-"
+                isp = "-"
+    except:
+        location = "-"
+        isp = "-"
+
+    # Сохраняем в SQLite
+    try:
+        with sqlite3.connect("analytics.db") as conn:
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS logins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT,
+                    username TEXT,
+                    first_name TEXT,
+                    last_name TEXT,
+                    platform TEXT,
+                    user_agent TEXT,
+                    ip TEXT,
+                    geo TEXT,
+                    isp TEXT,
+                    language TEXT,
+                    timezone TEXT,
+                    timestamp TEXT
+                )
+            """)
+            c.execute("""
+                INSERT INTO logins (
+                    user_id, username, first_name, last_name, platform,
+                    user_agent, ip, geo, isp, language, timezone, timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id, username, first_name, last_name, platform, user_agent,
+                ip, location, isp, language, timezone, datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            ))
+            conn.commit()
+    except Exception as e:
+        print("Ошибка сохранения в БД:", e)
+
+    return {"ok": True}
+
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def view_logins():
+    import sqlite3
+    conn = sqlite3.connect("analytics.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logins ORDER BY id DESC LIMIT 100")
+    rows = c.fetchall()
+    conn.close()
+    html = "<h2>Последние входы WebApp</h2><table border=1 cellpadding=5><tr>" + "".join(
+        f"<th>{col}</th>" for col in ["ID", "User ID", "Username", "Имя", "Фамилия", "Платформа", "User-Agent", "IP", "Гео", "Провайдер", "Язык", "Часовой пояс", "Время"]
+    ) + "</tr>"
+    for row in rows:
+        html += "<tr>" + "".join(f"<td>{str(cell)}</td>" for cell in row) + "</tr>"
+    html += "</table>"
+    return html
