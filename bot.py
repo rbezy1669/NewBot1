@@ -179,6 +179,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /start"""
     user = update.effective_user
     db.add_user(user.id, user.username, user.full_name)
+    log_user_login(user.id, user.username)
     
     welcome_text = f"""
 👋 Добро пожаловать, {user.first_name}!
@@ -525,6 +526,32 @@ def notify_admin(message: str):
             logger.error(f"❌ Ошибка при отправке в админ-бот: {response.text}")
     except Exception as e:
         logger.exception(f"❌ notify_admin() failed: {e}")
+
+
+def log_user_login(user_id: int, username: str = None, platform: str = "telegram", ip: str = "unknown", geo: str = "unknown"):
+    """Логирование входа пользователя в analytics.db"""
+    try:
+        conn = sqlite3.connect("analytics.db")
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS logins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                username TEXT,
+                platform TEXT,
+                ip TEXT,
+                geo TEXT,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        c.execute("""
+            INSERT INTO logins (user_id, username, platform, ip, geo)
+            VALUES (?, ?, ?, ?, ?)
+        """, (user_id, username, platform, ip, geo))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Ошибка логирования входа: {e}")
 
 def main():
     """Основная функция запуска бота"""
