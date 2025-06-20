@@ -328,6 +328,7 @@ if __name__ == "__main__":
 @app.post("/api/track-user")
 async def track_user(request: Request):
     import httpx, sqlite3
+    import os
     data = await request.json()
     ip = request.headers.get("x-forwarded-for", request.client.host)
     user_id = data.get("user_id", "-")
