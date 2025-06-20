@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
+from aiogram.enums import ParseMode
 from aiogram.utils import executor
 from dotenv import load_dotenv
 
