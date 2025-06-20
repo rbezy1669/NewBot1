@@ -545,8 +545,8 @@ def log_user_login(user_id: int, username: str = None, platform: str = "telegram
             )
         """)
         c.execute("""
-            INSERT INTO logins (user_id, username, platform, ip, geo)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO logins (user_id, username, platform, ip, geo, timestamp)
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
         """, (user_id, username, platform, ip, geo))
         conn.commit()
         conn.close()
