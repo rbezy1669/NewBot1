@@ -7,6 +7,7 @@ import logging
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import requests
 import sqlite3
 import asyncio
 from datetime import datetime
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 # Конфигурация
 BOT_TOKEN = os.getenv('BOT_TOKEN', '')
+ADMIN_BOT_TOKEN = os.getenv(\"ADMIN_BOT_TOKEN\", \"\")
+ADMIN_CHAT_ID = os.getenv(\"ADMIN_CHAT_ID\", \"\")
 CLIENT_ID = os.getenv('GOSUSLUGI_CLIENT_ID', 'your_client_id')
 REDIRECT_URI = os.getenv('REDIRECT_URI', 'https://yourdomain.ru/callback')
 AUTH_URL = (
@@ -256,6 +259,12 @@ async def process_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Сохранение в базу данных
     telegram_id = update.effective_user.id
     db.add_reading(telegram_id, reading_value)
+
+    notify_admin(f"📥 <b>Новые показания</b>\n"\
+                 f"👤 <b>@{update.effective_user.username}</b>\n"\
+                 f"🆔 <code>{telegram_id}</code>\n"\
+                 f"📊 <b>{reading_value}</b>\n"\
+                 f"📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     
     await update.message.reply_text(
         f"✅ Показания успешно переданы!\n\n"
@@ -449,6 +458,10 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
 
             logger.info(f"📥 Обращение в ТП от {name} (ID: {user_id}), время: {timestamp}")
 
+            notify_admin(f"📨 <b>Обращение в поддержку</b>\n"\
+                         f"👤 <b>{name}</b> (ID: <code>{user_id}</code>)\n"\
+                         f"🕒 {timestamp}")
+
             await update.message.reply_text(
                 "✅ Ваше обращение принято! С вами свяжется оператор при необходимости.",
                 reply_markup=MAIN_MARKUP
@@ -493,6 +506,25 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+
+
+def notify_admin(message: str):
+    """Отправка уведомления в админ-бот"""
+    if not ADMIN_BOT_TOKEN or not ADMIN_CHAT_ID:
+        logger.warning("❗ ADMIN_BOT_TOKEN или ADMIN_CHAT_ID не заданы.")
+        return
+    try:
+        url = f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": ADMIN_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+        }
+        response = requests.post(url, data=payload, timeout=5)
+        if response.status_code != 200:
+            logger.error(f"❌ Ошибка при отправке в админ-бот: {response.text}")
+    except Exception as e:
+        logger.exception(f"❌ notify_admin() failed: {e}")
 
 def main():
     """Основная функция запуска бота"""
