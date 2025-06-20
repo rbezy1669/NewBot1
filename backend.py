@@ -81,8 +81,6 @@ async def startup_event():
         logger.error(f"Failed to initialize database: {e}")
         raise e
 
-# Статические файлы
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():

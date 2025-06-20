@@ -9,6 +9,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 from datetime import datetime
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 Base = declarative_base()
 
