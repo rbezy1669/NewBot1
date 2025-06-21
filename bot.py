@@ -651,6 +651,3 @@ def main():
             "^❌ Отмена$"), cancel_operation)],
     )
     app.add_handler(ocr_conv)
-
-
-app.run_polling(drop_pending_updates=True)
