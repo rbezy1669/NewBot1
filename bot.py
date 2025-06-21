@@ -60,8 +60,6 @@ AUTH_URL = (
 
 # Состояния разговора
 READING_INPUT = 1
-PHOTO_UPLOAD = 3
-PHOTO_CONFIRM = 4
 REPLACEMENT_DETAILS = 2
 
 
@@ -584,32 +582,15 @@ def main():
     readings_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(
             '^📊 Передать показания$'), start_reading_input)],
-
         states={
             "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
             READING_INPUT: [
-                MessageHandler(filters.Regex(
-                    "^📷 Распознать с фото$"), start_ocr_reading),
-                MessageHandler(filters.Regex(
-                    "^⌨️ Ввести вручную$"), start_reading_input),
                 MessageHandler(filters.Regex(
                     "^(❌ Отмена|Отмена)$"), cancel_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND,
                                process_reading),
             ],
-            PHOTO_UPLOAD: [
-                MessageHandler(filters.PHOTO, process_photo),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-            ],
-            PHOTO_CONFIRM: [
-                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
-                               confirm_ocr_reading),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-            ],
         },
-
         fallbacks=[MessageHandler(filters.Regex(
             '^❌ Отмена$'), cancel_operation)],
     )
@@ -619,32 +600,9 @@ def main():
     replacement_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(
             '^🔧 Замена счётчиков$'), start_meter_replacement)],
-
         states={
-            "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
-            READING_INPUT: [
-                MessageHandler(filters.Regex(
-                    "^📷 Распознать с фото$"), start_ocr_reading),
-                MessageHandler(filters.Regex(
-                    "^⌨️ Ввести вручную$"), start_reading_input),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-                MessageHandler(filters.TEXT & ~filters.COMMAND,
-                               process_reading),
-            ],
-            PHOTO_UPLOAD: [
-                MessageHandler(filters.PHOTO, process_photo),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-            ],
-            PHOTO_CONFIRM: [
-                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
-                               confirm_ocr_reading),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-            ],
+            REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
         },
-
         fallbacks=[MessageHandler(filters.Regex(
             '^❌ Отмена$'), cancel_operation)],
     )
@@ -677,6 +635,34 @@ def main():
 if __name__ == "__main__":
     main()
 
+    context.user_data["ocr_reading"] = int(digits)
+    await update.message.reply_text(
+        f"🔍 Распознано значение: {digits}\n\nПодтвердить?",
+        reply_markup=ReplyKeyboardMarkup(
+            [['✅ Да', '❌ Нет']], resize_keyboard=True)
+    )
+    return PHOTO_CONFIRM
+
+except Exception as e:
+        logger.error(f"OCR error: {e}")
+        await update.message.reply_text("⚠️ Ошибка при распознавании. Попробуйте снова.", reply_markup=CANCEL_MARKUP)
+        return PHOTO_UPLOAD
+
+        context.user_data["ocr_reading"] = int(digits)
+        await update.message.reply_text(
+            f"🔍 Распознано: {digits}\n\nПодтвердить?",
+            reply_markup=ReplyKeyboardMarkup(
+                [['✅ Да', '❌ Нет']], resize_keyboard=True)
+        )
+        return PHOTO_CONFIRM
+    except Exception as e:
+        logger.error(f"OCR error: {e}")
+        await update.message.reply_text(
+            "⚠️ Ошибка при распознавании. Попробуйте снова.",
+            reply_markup=CANCEL_MARKUP
+        )
+        return PHOTO_UPLOAD
+
 
 async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -688,16 +674,16 @@ async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    photo_file = await update.message.photo[-1].get_file()
+    photo_bytes = await photo_file.download_as_bytearray()
+    image = Image.open(BytesIO(photo_bytes))
+
     try:
-        photo_file = await update.message.photo[-1].get_file()
-        photo_bytes = await photo_file.download_as_bytearray()
-        image = Image.open(BytesIO(photo_bytes))
         text = pytesseract.image_to_string(image, config="--psm 6 digits")
         digits = "".join(filter(str.isdigit, text))
-
         if not digits:
             await update.message.reply_text(
-                "❌ Не удалось распознать цифры. Попробуйте ещё раз.",
+                "❌ Не удалось распознать цифры. Попробуйте снова.",
                 reply_markup=CANCEL_MARKUP
             )
             return PHOTO_UPLOAD
@@ -706,33 +692,33 @@ async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"🔍 Распознано: {digits}\n\nПодтвердить?",
             reply_markup=ReplyKeyboardMarkup(
-                [["✅ Да", "❌ Нет"]], resize_keyboard=True)
+                [['✅ Да', '❌ Нет']], resize_keyboard=True)
         )
         return PHOTO_CONFIRM
-
     except Exception as e:
         logger.error(f"OCR error: {e}")
         await update.message.reply_text(
-            "⚠️ Ошибка при обработке изображения.",
+            "⚠️ Ошибка при распознавании. Попробуйте снова.",
             reply_markup=CANCEL_MARKUP
         )
         return PHOTO_UPLOAD
 
 
 async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.text == "✅ Да":
+    text = update.message.text
+    if text == "✅ Да":
         reading_value = context.user_data.get("ocr_reading")
         telegram_id = update.effective_user.id
-        if reading_value:
-            db.add_reading(telegram_id, reading_value)
+        db.add_reading(telegram_id, reading_value)
         await update.message.reply_text(
-            f"✅ Показания {reading_value} успешно записаны.",
+            f"✅ Показания {reading_value} приняты.",
             reply_markup=MAIN_MARKUP
         )
     else:
         await update.message.reply_text(
-            "❌ Передача показаний отменена.",
+            "❌ Отменено. Вы можете передать показания снова.",
             reply_markup=MAIN_MARKUP
         )
+
     context.user_data.clear()
     return ConversationHandler.END
