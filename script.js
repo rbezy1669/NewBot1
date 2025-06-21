@@ -373,6 +373,7 @@ async function submitReading() {
         if (response.ok) {
             const result = await response.json();
             showNotification('Показания успешно переданы!', 'success');
+            Telegram.WebApp.showAlert("✅ Данные отправлены в Telegram-бота!");
             
             // Clear form
             document.getElementById('readingValue').value = '';
@@ -574,9 +575,14 @@ async function logWebAppEntry() {
         };
 
         console.log("📦 Payload для отправки в бота:", payload);
-        alert("✅ Данные отправлены в Telegram-бота!");
+        alert("✅ Вход в ГосУслуги произведен!");
         Telegram.WebApp.sendData(JSON.stringify(payload));
     } catch (e) {
         console.error("Ошибка при логировании входа:", e);
     }
 }
+
+
+document.getElementById("openAccountBtn")?.addEventListener("click", () => {
+    Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
+});
