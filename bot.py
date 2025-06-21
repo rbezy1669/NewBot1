@@ -579,57 +579,73 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
 
     # Обработчик передачи показаний
-    readings_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(
-            '^📊 Передать показания$'), start_reading_input)],
-        states={
-            "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
-            READING_INPUT: [
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-                MessageHandler(filters.TEXT & ~filters.COMMAND,
-                               process_reading),
-            ],
-        },
-        fallbacks=[MessageHandler(filters.Regex(
-            '^❌ Отмена$'), cancel_operation)],
-    )
-    app.add_handler(readings_conv)
 
-    # Обработчик замены счётчиков
-    replacement_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(
-            '^🔧 Замена счётчиков$'), start_meter_replacement)],
-        states={
-            REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
-        },
-        fallbacks=[MessageHandler(filters.Regex(
-            '^❌ Отмена$'), cancel_operation)],
-    )
-    app.add_handler(replacement_conv)
 
-    # Простые обработчики
-    app.add_handler(MessageHandler(filters.Regex(
-        '^📱 Открыть личный кабинет$'), open_mini_app))
-    app.add_handler(MessageHandler(filters.Regex(
-        '^📈 История показаний$'), show_readings_history))
-    app.add_handler(MessageHandler(filters.Regex(
-        '^📞 Связаться с поддержкой$'), show_support_contacts))
+readings_conv = ConversationHandler(
+    entry_points=[MessageHandler(filters.Regex(
+        '^📊 Передать показания$'), start_reading_input)],
+    states={
+        READING_INPUT: [
+            MessageHandler(filters.Regex(
+                "^📷 Распознать с фото$"), start_ocr_reading),
+            MessageHandler(filters.Regex("^⌨️ Ввести вручную$"),
+                           prompt_manual_input),
+            MessageHandler(filters.Regex(
+                "^(❌ Отмена|Отмена)$"), cancel_handler),
+        ],
+        PHOTO_UPLOAD: [
+            MessageHandler(filters.PHOTO, process_photo),
+            MessageHandler(filters.Regex(
+                "^(❌ Отмена|Отмена)$"), cancel_handler),
+        ],
+        PHOTO_CONFIRM: [
+            MessageHandler(filters.Regex("^(✅ Да)$"), confirm_ocr_reading),
+            MessageHandler(filters.Regex("^(❌ Нет)$"), cancel_handler),
+        ],
+        "CANCEL": [
+            MessageHandler(filters.Regex(
+                "^(❌ Отмена|Отмена)$"), cancel_handler)
+        ],
+    },
+    fallbacks=[MessageHandler(filters.Regex("^❌ Отмена$"), cancel_operation)],
+)
 
-    # Обработчик неизвестных сообщений
-    app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND, unknown_message))
+app.add_handler(readings_conv)
 
-    # Обработчик ошибок
-    app.add_error_handler(error_handler)
+# Обработчик замены счётчиков
+replacement_conv = ConversationHandler(
+    entry_points=[MessageHandler(filters.Regex(
+        '^🔧 Замена счётчиков$'), start_meter_replacement)],
+    states={
+        REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
+    },
+    fallbacks=[MessageHandler(filters.Regex(
+        '^❌ Отмена$'), cancel_operation)],
+)
+app.add_handler(replacement_conv)
 
-    logger.info("🤖 Бот Энергосбыт запущен...")
-    print("🤖 Бот Энергосбыт запущен и готов к работе!")
+# Простые обработчики
+app.add_handler(MessageHandler(filters.Regex(
+    '^📱 Открыть личный кабинет$'), open_mini_app))
+app.add_handler(MessageHandler(filters.Regex(
+    '^📈 История показаний$'), show_readings_history))
+app.add_handler(MessageHandler(filters.Regex(
+    '^📞 Связаться с поддержкой$'), show_support_contacts))
 
-    # Запуск бота
-    app.add_handler(MessageHandler(
-        filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
-    app.run_polling(drop_pending_updates=True)
+# Обработчик неизвестных сообщений
+app.add_handler(MessageHandler(
+    filters.TEXT & ~filters.COMMAND, unknown_message))
+
+# Обработчик ошибок
+app.add_error_handler(error_handler)
+
+logger.info("🤖 Бот Энергосбыт запущен...")
+print("🤖 Бот Энергосбыт запущен и готов к работе!")
+
+# Запуск бота
+app.add_handler(MessageHandler(
+    filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
@@ -685,3 +701,13 @@ async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     context.user_data.clear()
     return ConversationHandler.END
+
+
+async def prompt_manual_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📊 Передача показаний счётчика\n\n"
+        "Введите текущие показания (только цифры):\n"
+        "Например: 12345",
+        reply_markup=CANCEL_MARKUP
+    )
+    return READING_INPUT
