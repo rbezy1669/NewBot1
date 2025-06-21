@@ -28,7 +28,6 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "❌ Действие отменено. Вы возвращены в главное меню.",
         reply_markup=MAIN_MARKUP  # Заменить на свою клавиатуру, если другая
     )
-    context.user_data.clear()
     return ConversationHandler.END
 
 """
