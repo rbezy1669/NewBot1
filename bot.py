@@ -66,7 +66,8 @@ REPLACEMENT_DETAILS = 2
 MAIN_KEYBOARD = [
     [KeyboardButton("📱 Открыть личный кабинет", web_app=WebAppInfo(
         url="https://new-bot1-murex.vercel.app"))],
-    ["📊 Передать показания", "📈 История показаний"],
+    ["📊 Передать показания", "📷 Распознать с фото"],
+    ["📈 История показаний", "🔧 Замена счётчиков"],
     ["🔧 Замена счётчиков", "📞 Связаться с поддержкой"]
 ]
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
