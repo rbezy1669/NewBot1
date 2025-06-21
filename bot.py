@@ -594,12 +594,14 @@ async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         context.user_data["ocr_reading"] = int(digits)
         await update.message.reply_text(
-            f"🔍 Распознано: {digits}
-
-            Подтвердить?",
+            f"🔍 Распознано: {digits}\n\n"
+            "Подтвердить?",
             reply_markup=ReplyKeyboardMarkup(
-                [['✅ Да', '❌ Нет']], resize_keyboard=True)
+                [['✅ Да', '❌ Нет']],
+                resize_keyboard=True
+            )
         )
+
         return PHOTO_CONFIRM
 
     except Exception as e:
