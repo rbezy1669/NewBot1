@@ -718,3 +718,8 @@ def main():
             "^❌ Отмена$"), cancel_operation)],
     )
     app.add_handler(ocr_conv)
+
+
+if __name__ == "__main__":
+    print("▶ Запускаем main()")  # Добавлено для отладки
+    main()
