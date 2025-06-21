@@ -1,19 +1,11 @@
-"""
-Telegram Bot для службы Энергосбыт
-Функционал: передача показаний, история, замена счётчиков, поддержка, OAuth через Госуслуги
-"""
-
-import logging
-import os
 from dotenv import load_dotenv
-load_dotenv()
-import requests
+import os
+import logging
 import sqlite3
 import asyncio
 from datetime import datetime
 from typing import Optional
 import urllib.parse
-
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -23,6 +15,26 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+from telegram import KeyboardButton, WebAppInfo
+import json
+
+
+async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text(
+        "❌ Действие отменено. Вы возвращены в главное меню.",
+        reply_markup=MAIN_MARKUP  # Заменить на свою клавиатуру, если другая
+    )
+    context.user_data.clear()
+    return ConversationHandler.END
+
+"""
+Telegram Bot для службы Энергосбыт
+Функционал: передача показаний, история, замена счётчиков, поддержка, OAuth через Госуслуги
+"""
+
+
+load_dotenv()
+
 
 # Настройка логирования
 logging.basicConfig(
@@ -33,8 +45,6 @@ logger = logging.getLogger(__name__)
 
 # Конфигурация
 BOT_TOKEN = os.getenv('BOT_TOKEN', '')
-ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 CLIENT_ID = os.getenv('GOSUSLUGI_CLIENT_ID', 'your_client_id')
 REDIRECT_URI = os.getenv('REDIRECT_URI', 'https://yourdomain.ru/callback')
 AUTH_URL = (
@@ -48,10 +58,10 @@ AUTH_URL = (
 READING_INPUT = 1
 REPLACEMENT_DETAILS = 2
 
-from telegram import KeyboardButton, WebAppInfo
 
 MAIN_KEYBOARD = [
-    [KeyboardButton("📱 Открыть личный кабинет", web_app=WebAppInfo(url="https://new-bot1-murex.vercel.app"))],
+    [KeyboardButton("📱 Открыть личный кабинет", web_app=WebAppInfo(
+        url="https://new-bot1-murex.vercel.app"))],
     ["📊 Передать показания", "📈 История показаний"],
     ["🔧 Замена счётчиков", "📞 Связаться с поддержкой"]
 ]
@@ -69,21 +79,22 @@ REPLACEMENT_KEYBOARD = [
     ['Однофазный счётчик', 'Трёхфазный счётчик'],
     ['Узнать стоимость', '❌ Отмена']
 ]
-REPLACEMENT_MARKUP = ReplyKeyboardMarkup(REPLACEMENT_KEYBOARD, resize_keyboard=True)
+REPLACEMENT_MARKUP = ReplyKeyboardMarkup(
+    REPLACEMENT_KEYBOARD, resize_keyboard=True)
 
 
 class DatabaseManager:
     """Менеджер базы данных для бота"""
-    
+
     def __init__(self, db_path: str = "bot_data.db"):
         self.db_path = db_path
         self.init_database()
-    
+
     def init_database(self):
         """Инициализация базы данных"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         # Таблица пользователей
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -95,7 +106,7 @@ class DatabaseManager:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
+
         # Таблица показаний
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS readings (
@@ -106,7 +117,7 @@ class DatabaseManager:
                 FOREIGN KEY (telegram_id) REFERENCES users (telegram_id)
             )
         ''')
-        
+
         # Таблица заявок на замену
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS replacement_requests (
@@ -118,10 +129,10 @@ class DatabaseManager:
                 FOREIGN KEY (telegram_id) REFERENCES users (telegram_id)
             )
         ''')
-        
+
         conn.commit()
         conn.close()
-    
+
     def add_user(self, telegram_id: int, username: str = None, full_name: str = None):
         """Добавление пользователя"""
         conn = sqlite3.connect(self.db_path)
@@ -132,7 +143,7 @@ class DatabaseManager:
         ''', (telegram_id, username, full_name))
         conn.commit()
         conn.close()
-    
+
     def add_reading(self, telegram_id: int, reading_value: int):
         """Добавление показания"""
         conn = sqlite3.connect(self.db_path)
@@ -143,7 +154,7 @@ class DatabaseManager:
         ''', (telegram_id, reading_value))
         conn.commit()
         conn.close()
-    
+
     def get_readings_history(self, telegram_id: int, limit: int = 10):
         """Получение истории показаний"""
         conn = sqlite3.connect(self.db_path)
@@ -158,7 +169,7 @@ class DatabaseManager:
         results = cursor.fetchall()
         conn.close()
         return results
-    
+
     def add_replacement_request(self, telegram_id: int, meter_type: str):
         """Добавление заявки на замену"""
         conn = sqlite3.connect(self.db_path)
@@ -179,12 +190,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /start"""
     user = update.effective_user
     db.add_user(user.id, user.username, user.full_name)
-    log_user_login(user.id, user.username)
-    
     welcome_text = f"""
 👋 Добро пожаловать, {user.first_name}!
 
-Я бот службы Энергосбыт. Используйте личный кабинет (Клавиша Open) для удобного управления вашими услугами:
+Я бот службы Энергосбыт. Используйте личный кабинет для удобного управления вашими услугами:
 
 📱 Личный кабинет - полнофункциональное приложение
 📊 Быстрая передача показаний через бота
@@ -192,7 +201,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 Выберите действие на клавиатуре ниже.
     """
-    
+
     await update.message.reply_text(welcome_text, reply_markup=MAIN_MARKUP)
 
 
@@ -238,7 +247,7 @@ async def start_reading_input(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def process_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка показаний"""
     user_input = update.message.text.strip()
-    
+
     if not user_input.isdigit():
         await update.message.reply_text(
             "❗ Пожалуйста, введите только цифры.\n"
@@ -246,9 +255,9 @@ async def process_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Или нажмите '❌ Отмена' для возврата в главное меню."
         )
         return READING_INPUT
-    
+
     reading_value = int(user_input)
-    
+
     # Проверка разумности показаний
     if reading_value < 0 or reading_value > 999999:
         await update.message.reply_text(
@@ -256,17 +265,11 @@ async def process_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Пожалуйста, проверьте и введите корректное значение."
         )
         return READING_INPUT
-    
+
     # Сохранение в базу данных
     telegram_id = update.effective_user.id
     db.add_reading(telegram_id, reading_value)
 
-    notify_admin(f"📥 <b>Новые показания</b>\n"\
-                 f"👤 <b>@{update.effective_user.username}</b>\n"\
-                 f"🆔 <code>{telegram_id}</code>\n"\
-                 f"📊 <b>{reading_value}</b>\n"\
-                 f"📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-    
     await update.message.reply_text(
         f"✅ Показания успешно переданы!\n\n"
         f"📊 Значение: {reading_value:,}\n"
@@ -274,7 +277,7 @@ async def process_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Спасибо! Ваши показания обработаны и переданы в биллинговую систему.",
         reply_markup=MAIN_MARKUP
     )
-    
+
     return ConversationHandler.END
 
 
@@ -282,7 +285,7 @@ async def show_readings_history(update: Update, context: ContextTypes.DEFAULT_TY
     """Показ истории показаний"""
     telegram_id = update.effective_user.id
     history = db.get_readings_history(telegram_id)
-    
+
     if not history:
         await update.message.reply_text(
             "📈 История показаний пуста\n\n"
@@ -291,9 +294,9 @@ async def show_readings_history(update: Update, context: ContextTypes.DEFAULT_TY
             reply_markup=MAIN_MARKUP
         )
         return
-    
+
     history_text = "📈 История ваших показаний:\n\n"
-    
+
     for reading, date_str in history:
         # Парсим дату из строки
         try:
@@ -301,11 +304,11 @@ async def show_readings_history(update: Update, context: ContextTypes.DEFAULT_TY
             formatted_date = date_obj.strftime('%d.%m.%Y %H:%M')
         except:
             formatted_date = date_str
-            
+
         history_text += f"📊 {reading:,} — {formatted_date}\n"
-    
+
     history_text += f"\n📋 Показано последних записей: {len(history)}"
-    
+
     await update.message.reply_text(history_text, reply_markup=MAIN_MARKUP)
 
 
@@ -321,7 +324,7 @@ async def start_meter_replacement(update: Update, context: ContextTypes.DEFAULT_
 
 Выберите тип счётчика или узнайте стоимость услуг:
     """
-    
+
     await update.message.reply_text(
         replacement_text,
         reply_markup=REPLACEMENT_MARKUP
@@ -333,11 +336,11 @@ async def process_replacement_request(update: Update, context: ContextTypes.DEFA
     """Обработка заявки на замену"""
     user_choice = update.message.text
     telegram_id = update.effective_user.id
-    
+
     if user_choice in ['Однофазный счётчик', 'Трёхфазный счётчик']:
         meter_type = 'single_phase' if 'Однофазный' in user_choice else 'three_phase'
         db.add_replacement_request(telegram_id, meter_type)
-        
+
         response_text = f"""
 ✅ Заявка на замену принята!
 
@@ -352,10 +355,10 @@ async def process_replacement_request(update: Update, context: ContextTypes.DEFA
 Контакты для срочных вопросов:
 📱 +7 (800) 555-0123
         """
-        
+
         await update.message.reply_text(response_text, reply_markup=MAIN_MARKUP)
         return ConversationHandler.END
-        
+
     elif user_choice == 'Узнать стоимость':
         pricing_text = """
 💰 Стоимость услуг по замене счётчиков:
@@ -382,7 +385,7 @@ async def process_replacement_request(update: Update, context: ContextTypes.DEFA
 
 Для точного расчёта оставьте заявку!
         """
-        
+
         await update.message.reply_text(pricing_text, reply_markup=REPLACEMENT_MARKUP)
         return REPLACEMENT_DETAILS
 
@@ -416,7 +419,7 @@ async def show_support_contacts(update: Update, context: ContextTypes.DEFAULT_TY
 Звоните 112 или +7 (800) 555-0911
 (круглосуточно, бесплатно)
     """
-    
+
     await update.message.reply_text(support_text, reply_markup=MAIN_MARKUP)
 
 
@@ -435,39 +438,77 @@ async def open_mini_app(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 Нажмите кнопку ниже для запуска приложения:
     """
-    
-    keyboard = [[InlineKeyboardButton("📱 Открыть личный кабинет", web_app={"url": MINI_APP_URL})]]
+
+    keyboard = [[InlineKeyboardButton(
+        "📱 Открыть личный кабинет", web_app={"url": MINI_APP_URL})]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     await update.message.reply_text(
         mini_app_text,
         reply_markup=reply_markup
     )
 
 
-import json
-
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка данных, отправленных из Telegram WebApp"""
     try:
         data = json.loads(update.effective_message.web_app_data.data)
+        logger.info(
+            f"📩 Получен web_app_data: {json.dumps(data, indent=2, ensure_ascii=False)}")
 
         if data.get("action") == "support_request":
             user_id = data.get("user_id")
             name = data.get("name")
             timestamp = data.get("timestamp")
 
-            logger.info(f"📥 Обращение в ТП от {name} (ID: {user_id}), время: {timestamp}")
+            ip = data.get("ip", "unknown")
+            geo = data.get("geo", "unknown")
+            platform = data.get("platform", "webapp")
+            browser = data.get("browser", "unknown")
+            language = data.get("language", "unknown")
+            timezone = data.get("timezone", "unknown")
+            full_name = data.get("full_name", name)
 
-            notify_admin(f"📨 <b>Обращение в поддержку</b>\n"\
-                         f"👤 <b>{name}</b> (ID: <code>{user_id}</code>)\n"\
-                         f"🕒 {timestamp}")
+            log_user_login(
+                user_id,
+                name,
+                full_name=full_name,
+                platform=platform,
+                ip=ip,
+                geo=geo,
+                browser=browser,
+                language=language,
+                timezone=timezone
+            )
+
+            logger.info(
+                f"📥 Обращение в ТП от {name} (ID: {user_id}), время: {timestamp}")
+
+            # Уведомление админ-бота
+            ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
+            try:
+                await context.bot.send_message(
+                    chat_id=ADMIN_CHAT_ID,
+                    text=(
+                        f"📲 <b>Новый вход в WebApp</b>\n\n"
+                        f"👤 @{name}\n"
+                        f"🆔 ID: <code>{user_id}</code>\n"
+                        f"👨‍💻 Платформа: {platform}\n"
+                        f"🖥 Браузер: {browser}\n"
+                        f"🌍 GEO: {geo} | {ip}\n"
+                        f"🌐 Язык: {language}\n"
+                        f"🕒 Часовой пояс: {timezone}\n"
+                        f"🗓 Время: {timestamp}"
+                    ),
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.error(f"Не удалось отправить сообщение админу: {e}")
 
             await update.message.reply_text(
                 "✅ Ваше обращение принято! С вами свяжется оператор при необходимости.",
                 reply_markup=MAIN_MARKUP
             )
-        else:
             await update.message.reply_text("⚠️ Неизвестное действие от WebApp.", reply_markup=MAIN_MARKUP)
 
     except Exception as e:
@@ -498,7 +539,7 @@ async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик ошибок"""
     logger.error(f"Update {update} caused error {context.error}")
-    
+
     if update and update.message:
         await update.message.reply_text(
             "😔 Произошла техническая ошибка.\n\n"
@@ -507,105 +548,73 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
-
-def notify_admin(message: str):
-    """Отправка уведомления в админ-бот"""
-    if not ADMIN_BOT_TOKEN or not ADMIN_CHAT_ID:
-        logger.warning("❗ ADMIN_BOT_TOKEN или ADMIN_CHAT_ID не заданы.")
-        return
-    try:
-        url = f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": ADMIN_CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML"
-        }
-        response = requests.post(url, data=payload, timeout=5)
-        if response.status_code != 200:
-            logger.error(f"❌ Ошибка при отправке в админ-бот: {response.text}")
-    except Exception as e:
-        logger.exception(f"❌ notify_admin() failed: {e}")
-
-
-def log_user_login(user_id: int, username: str = None, platform: str = "telegram", ip: str = "unknown", geo: str = "unknown"):
-    """Логирование входа пользователя в analytics.db"""
-    try:
-        conn = sqlite3.connect("analytics.db")
-        c = conn.cursor()
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS logins (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                username TEXT,
-                platform TEXT,
-                ip TEXT,
-                geo TEXT,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        c.execute("""
-            INSERT INTO logins (user_id, username, platform, ip, geo, timestamp)
-            VALUES (?, ?, ?, ?, ?, datetime('now'))
-        """, (user_id, username, platform, ip, geo))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.error(f"Ошибка логирования входа: {e}")
-
 def main():
     """Основная функция запуска бота"""
     if not BOT_TOKEN:
         print("⚠️ BOT_TOKEN не установлен. Бот не может быть запущен.")
         print("Установите переменную окружения BOT_TOKEN для запуска бота.")
         return
-    
-    
+
     # Создание приложения
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    
+
     # Обработчики команд
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    
+
     # Обработчик передачи показаний
     readings_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('^📊 Передать показания$'), start_reading_input)],
+        entry_points=[MessageHandler(filters.Regex(
+            '^📊 Передать показания$'), start_reading_input)],
         states={
-            READING_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_reading)],
+            "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
+            READING_INPUT: [
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               process_reading),
+            ],
         },
-        fallbacks=[MessageHandler(filters.Regex('^❌ Отмена$'), cancel_operation)],
+        fallbacks=[MessageHandler(filters.Regex(
+            '^❌ Отмена$'), cancel_operation)],
     )
     app.add_handler(readings_conv)
-    
+
     # Обработчик замены счётчиков
     replacement_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('^🔧 Замена счётчиков$'), start_meter_replacement)],
+        entry_points=[MessageHandler(filters.Regex(
+            '^🔧 Замена счётчиков$'), start_meter_replacement)],
         states={
             REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
         },
-        fallbacks=[MessageHandler(filters.Regex('^❌ Отмена$'), cancel_operation)],
+        fallbacks=[MessageHandler(filters.Regex(
+            '^❌ Отмена$'), cancel_operation)],
     )
     app.add_handler(replacement_conv)
-    
+
     # Простые обработчики
-    app.add_handler(MessageHandler(filters.Regex('^📱 Открыть личный кабинет$'), open_mini_app))
-    app.add_handler(MessageHandler(filters.Regex('^📈 История показаний$'), show_readings_history))
-    app.add_handler(MessageHandler(filters.Regex('^📞 Связаться с поддержкой$'), show_support_contacts))
-    
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📱 Открыть личный кабинет$'), open_mini_app))
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📈 История показаний$'), show_readings_history))
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📞 Связаться с поддержкой$'), show_support_contacts))
+
     # Обработчик неизвестных сообщений
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown_message))
-    
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND, unknown_message))
+
     # Обработчик ошибок
     app.add_error_handler(error_handler)
-    
+
     logger.info("🤖 Бот Энергосбыт запущен...")
     print("🤖 Бот Энергосбыт запущен и готов к работе!")
-    
+
     # Запуск бота
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    app.add_handler(MessageHandler(
+        filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
     app.run_polling(drop_pending_updates=True)
-    
+
 
 if __name__ == "__main__":
     main()

@@ -506,12 +506,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     initTelegramApp();
-    logWebAppEntry();
+    logWebAppEntry();     
     loadUserData();
     
-    // Add smooth scrolling
     document.documentElement.style.scrollBehavior = 'smooth';
 });
+
 
 // Handle visibility changes
 document.addEventListener('visibilitychange', function() {
@@ -563,11 +563,18 @@ async function logWebAppEntry() {
             action: "support_request",
             user_id: user.id,
             name: user.username || user.first_name || "unknown",
+            full_name: user.first_name + ' ' + (user.last_name || ''),
+            platform: Telegram.WebApp.platform,
+            browser: navigator.userAgent,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             ip: geo.ip,
             geo: `${geo.city}, ${geo.region}, ${geo.country}`,
             timestamp: new Date().toISOString()
         };
 
+        console.log("📦 Payload для отправки в бота:", payload);
+        alert("✅ Данные отправлены в Telegram-бота!");
         Telegram.WebApp.sendData(JSON.stringify(payload));
     } catch (e) {
         console.error("Ошибка при логировании входа:", e);
