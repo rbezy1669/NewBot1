@@ -34,6 +34,7 @@ let consumptionChart = null;
 function initTelegramApp() {
     if (tg) {
         tg.ready();
+        Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
         tg.expand();
         tg.setHeaderColor('#667eea');
         tg.setBackgroundColor('#ffffff');
@@ -575,7 +576,7 @@ async function logWebAppEntry() {
         };
 
         console.log("📦 Payload для отправки в бота:", payload);
-        Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
+        
         Telegram.WebApp.sendData(JSON.stringify(payload));
     } catch (e) {
         console.error("Ошибка при логировании входа:", e);
@@ -586,6 +587,6 @@ async function logWebAppEntry() {
 
 
 document.getElementById("openAccountBtn")?.addEventListener("click", () => {
-    Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
+    
     window.open("https://esia.gosuslugi.ru/login/", "_blank");
 });
