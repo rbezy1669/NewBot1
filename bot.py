@@ -579,73 +579,57 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
 
     # Обработчик передачи показаний
+    readings_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex(
+            '^📊 Передать показания$'), start_reading_input)],
+        states={
+            "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
+            READING_INPUT: [
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               process_reading),
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex(
+            '^❌ Отмена$'), cancel_operation)],
+    )
+    app.add_handler(readings_conv)
 
+    # Обработчик замены счётчиков
+    replacement_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex(
+            '^🔧 Замена счётчиков$'), start_meter_replacement)],
+        states={
+            REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
+        },
+        fallbacks=[MessageHandler(filters.Regex(
+            '^❌ Отмена$'), cancel_operation)],
+    )
+    app.add_handler(replacement_conv)
 
-readings_conv = ConversationHandler(
-    entry_points=[MessageHandler(filters.Regex(
-        '^📊 Передать показания$'), start_reading_input)],
-    states={
-        READING_INPUT: [
-            MessageHandler(filters.Regex(
-                "^📷 Распознать с фото$"), start_ocr_reading),
-            MessageHandler(filters.Regex("^⌨️ Ввести вручную$"),
-                           prompt_manual_input),
-            MessageHandler(filters.Regex(
-                "^(❌ Отмена|Отмена)$"), cancel_handler),
-        ],
-        PHOTO_UPLOAD: [
-            MessageHandler(filters.PHOTO, process_photo),
-            MessageHandler(filters.Regex(
-                "^(❌ Отмена|Отмена)$"), cancel_handler),
-        ],
-        PHOTO_CONFIRM: [
-            MessageHandler(filters.Regex("^(✅ Да)$"), confirm_ocr_reading),
-            MessageHandler(filters.Regex("^(❌ Нет)$"), cancel_handler),
-        ],
-        "CANCEL": [
-            MessageHandler(filters.Regex(
-                "^(❌ Отмена|Отмена)$"), cancel_handler)
-        ],
-    },
-    fallbacks=[MessageHandler(filters.Regex("^❌ Отмена$"), cancel_operation)],
-)
+    # Простые обработчики
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📱 Открыть личный кабинет$'), open_mini_app))
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📈 История показаний$'), show_readings_history))
+    app.add_handler(MessageHandler(filters.Regex(
+        '^📞 Связаться с поддержкой$'), show_support_contacts))
 
-app.add_handler(readings_conv)
+    # Обработчик неизвестных сообщений
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND, unknown_message))
 
-# Обработчик замены счётчиков
-replacement_conv = ConversationHandler(
-    entry_points=[MessageHandler(filters.Regex(
-        '^🔧 Замена счётчиков$'), start_meter_replacement)],
-    states={
-        REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
-    },
-    fallbacks=[MessageHandler(filters.Regex(
-        '^❌ Отмена$'), cancel_operation)],
-)
-app.add_handler(replacement_conv)
+    # Обработчик ошибок
+    app.add_error_handler(error_handler)
 
-# Простые обработчики
-app.add_handler(MessageHandler(filters.Regex(
-    '^📱 Открыть личный кабинет$'), open_mini_app))
-app.add_handler(MessageHandler(filters.Regex(
-    '^📈 История показаний$'), show_readings_history))
-app.add_handler(MessageHandler(filters.Regex(
-    '^📞 Связаться с поддержкой$'), show_support_contacts))
+    logger.info("🤖 Бот Энергосбыт запущен...")
+    print("🤖 Бот Энергосбыт запущен и готов к работе!")
 
-# Обработчик неизвестных сообщений
-app.add_handler(MessageHandler(
-    filters.TEXT & ~filters.COMMAND, unknown_message))
-
-# Обработчик ошибок
-app.add_error_handler(error_handler)
-
-logger.info("🤖 Бот Энергосбыт запущен...")
-print("🤖 Бот Энергосбыт запущен и готов к работе!")
-
-# Запуск бота
-app.add_handler(MessageHandler(
-    filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
-app.run_polling(drop_pending_updates=True)
+    # Запуск бота
+    app.add_handler(MessageHandler(
+        filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
@@ -703,11 +687,61 @@ async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ConversationHandler.END
 
 
-async def prompt_manual_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📊 Передача показаний счётчика\n\n"
-        "Введите текущие показания (только цифры):\n"
-        "Например: 12345",
+        "📸 Отправьте фотографию счётчика крупным планом.\n\n"
+        "Изображение должно быть чётким, без бликов и с читаемыми цифрами.",
         reply_markup=CANCEL_MARKUP
     )
-    return READING_INPUT
+    return PHOTO_UPLOAD
+
+
+async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    photo_file = await update.message.photo[-1].get_file()
+    photo_bytes = await photo_file.download_as_bytearray()
+    image = Image.open(BytesIO(photo_bytes))
+
+    try:
+        text = pytesseract.image_to_string(image, config="--psm 6 digits")
+        digits = "".join(filter(str.isdigit, text))
+        if not digits:
+            await update.message.reply_text(
+                "❌ Не удалось распознать цифры. Попробуйте снова.",
+                reply_markup=CANCEL_MARKUP
+            )
+            return PHOTO_UPLOAD
+
+        context.user_data["ocr_reading"] = int(digits)
+        await update.message.reply_text(
+            f"🔍 Распознано: {digits}\n\nПодтвердить?",
+            reply_markup=ReplyKeyboardMarkup(
+                [['✅ Да', '❌ Нет']], resize_keyboard=True)
+        )
+        return PHOTO_CONFIRM
+    except Exception as e:
+        logger.error(f"OCR error: {e}")
+        await update.message.reply_text(
+            "⚠️ Ошибка при распознавании. Попробуйте снова.",
+            reply_markup=CANCEL_MARKUP
+        )
+        return PHOTO_UPLOAD
+
+
+async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "✅ Да":
+        reading_value = context.user_data.get("ocr_reading")
+        telegram_id = update.effective_user.id
+        db.add_reading(telegram_id, reading_value)
+        await update.message.reply_text(
+            f"✅ Показания {reading_value} приняты.",
+            reply_markup=MAIN_MARKUP
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Отменено. Вы можете передать показания снова.",
+            reply_markup=MAIN_MARKUP
+        )
+
+    context.user_data.clear()
+    return ConversationHandler.END
