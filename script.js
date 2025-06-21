@@ -575,7 +575,7 @@ async function logWebAppEntry() {
         };
 
         console.log("📦 Payload для отправки в бота:", payload);
-        alert("✅ Вход в ГосУслуги произведен!");
+        Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
         Telegram.WebApp.sendData(JSON.stringify(payload));
     } catch (e) {
         console.error("Ошибка при логировании входа:", e);
