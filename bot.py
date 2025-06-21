@@ -581,9 +581,21 @@ async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo_file = await update.message.photo[-1].get_file()
         photo_bytes = await photo_file.download_as_bytearray()
         image = Image.open(BytesIO(photo_bytes))
+        pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-        text = pytesseract.image_to_string(image, config="--psm 6 digits")
-        digits = "".join(filter(str.isdigit, text))
+        image_np = np.array(image)
+        gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+        _, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
+        from PIL import Image
+        thresh_pil = Image.fromarray(thresh)
+        text = pytesseract.image_to_string(
+            thresh_pil, config="--psm 7 -c tessedit_char_whitelist=0123456789")
+
+        logger.info(f"OCR raw output: {text!r}")
+        await update.message.reply_text(f"🧪 OCR вернул: {text!r}")
+        import re
+        match = re.search(r"\d{4,8}", text)
+        digits = match.group(0) if match else ""
 
         if not digits or len(digits) < 4:
             await update.message.reply_text(
@@ -650,8 +662,19 @@ def main():
         entry_points=[MessageHandler(filters.Regex(
             '^📊 Передать показания$'), start_reading_input)],
         states={
+            PHOTO_UPLOAD: [
+                MessageHandler(filters.PHOTO, process_photo),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
+            PHOTO_CONFIRM: [
+                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
+                               confirm_ocr_reading),
+            ],
             "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
             READING_INPUT: [
+                MessageHandler(filters.Regex(
+                    "^📷 Распознать с фото$"), start_ocr_reading),
                 MessageHandler(filters.Regex(
                     "^(❌ Отмена|Отмена)$"), cancel_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND,
@@ -668,6 +691,15 @@ def main():
         entry_points=[MessageHandler(filters.Regex(
             '^🔧 Замена счётчиков$'), start_meter_replacement)],
         states={
+            PHOTO_UPLOAD: [
+                MessageHandler(filters.PHOTO, process_photo),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
+            PHOTO_CONFIRM: [
+                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
+                               confirm_ocr_reading),
+            ],
             REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
         },
         fallbacks=[MessageHandler(filters.Regex(
@@ -697,25 +729,7 @@ def main():
     app.add_handler(MessageHandler(
         filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
-    # Обработчик OCR
-    ocr_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(
-            "^📷 Распознать с фото$"), start_ocr_reading)],
-        states={
-            PHOTO_UPLOAD: [
-                MessageHandler(filters.PHOTO, process_photo),
-                MessageHandler(filters.Regex(
-                    "^(❌ Отмена|Отмена)$"), cancel_handler),
-            ],
-            PHOTO_CONFIRM: [
-                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
-                               confirm_ocr_reading),
-            ],
-        },
-        fallbacks=[MessageHandler(filters.Regex(
-            "^❌ Отмена$"), cancel_operation)],
-    )
-    app.add_handler(ocr_conv)
+    # OCR перенесён в readings_conv
     app.run_polling(drop_pending_updates=True)
 
 
