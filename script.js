@@ -583,6 +583,9 @@ async function logWebAppEntry() {
 }
 
 
+
+
 document.getElementById("openAccountBtn")?.addEventListener("click", () => {
     Telegram.WebApp.showAlert("✅ Вход в ГосУслуги произведен!");
+    window.open("https://esia.gosuslugi.ru/login/", "_blank");
 });
