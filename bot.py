@@ -61,6 +61,8 @@ AUTH_URL = (
 # Состояния разговора
 READING_INPUT = 1
 REPLACEMENT_DETAILS = 2
+PHOTO_UPLOAD = 3
+PHOTO_CONFIRM = 4
 
 
 MAIN_KEYBOARD = [
@@ -564,6 +566,71 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Запрос фото для OCR"""
+    await update.message.reply_text(
+        "📸 Пожалуйста, отправьте фотографию счётчика крупным планом. Цифры должны быть чётко видны.",
+        reply_markup=CANCEL_MARKUP
+    )
+    return PHOTO_UPLOAD
+
+
+async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка фото с распознаванием текста"""
+    try:
+        photo_file = await update.message.photo[-1].get_file()
+        photo_bytes = await photo_file.download_as_bytearray()
+        image = Image.open(BytesIO(photo_bytes))
+
+        text = pytesseract.image_to_string(image, config="--psm 6 digits")
+        digits = "".join(filter(str.isdigit, text))
+
+        if not digits or len(digits) < 4:
+            await update.message.reply_text(
+                "❌ Не удалось распознать цифры. Попробуйте другое фото.",
+                reply_markup=CANCEL_MARKUP
+            )
+            return PHOTO_UPLOAD
+
+        context.user_data["ocr_reading"] = int(digits)
+        await update.message.reply_text(
+            f"""🔍 Распознано: {digits}
+
+            Подтвердить?""",
+            reply_markup=ReplyKeyboardMarkup(
+                [['✅ Да', '❌ Нет']], resize_keyboard=True)
+        )
+        return PHOTO_CONFIRM
+
+    except Exception as e:
+        logger.error(f"OCR error: {e}")
+        await update.message.reply_text(
+            "⚠️ Произошла ошибка при распознавании. Попробуйте снова.",
+            reply_markup=CANCEL_MARKUP
+        )
+        return PHOTO_UPLOAD
+
+
+async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Подтверждение распознанных данных"""
+    choice = update.message.text
+    if choice == "✅ Да":
+        reading = context.user_data.get("ocr_reading")
+        telegram_id = update.effective_user.id
+        db.add_reading(telegram_id, reading)
+        await update.message.reply_text(
+            f"✅ Показания {reading} успешно переданы!",
+            reply_markup=MAIN_MARKUP
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Отменено. Вы можете передать показания снова.",
+            reply_markup=MAIN_MARKUP
+        )
+    context.user_data.clear()
+    return ConversationHandler.END
+
+
 def main():
     """Основная функция запуска бота"""
     if not BOT_TOKEN:
@@ -629,6 +696,26 @@ def main():
     # Запуск бота
     app.add_handler(MessageHandler(
         filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+
+    # Обработчик OCR
+    ocr_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex(
+            "^📷 Распознать с фото$"), start_ocr_reading)],
+        states={
+            PHOTO_UPLOAD: [
+                MessageHandler(filters.PHOTO, process_photo),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
+            PHOTO_CONFIRM: [
+                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
+                               confirm_ocr_reading),
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex(
+            "^❌ Отмена$"), cancel_operation)],
+    )
+    app.add_handler(ocr_conv)
     app.run_polling(drop_pending_updates=True)
 
 
