@@ -567,9 +567,9 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Запрос фото для OCR"""
-    await update.message.reply_text("📸 Пожалуйста, отправьте фотографию счётчика крупным планом.
+    await update.message.reply_text("""📸 Пожалуйста, отправьте фотографию счётчика крупным планом.
                                     "
-                                    "Цифры должны быть чётко видны.",
+                                    "Цифры должны быть чётко видны.""",
                                     reply_markup=CANCEL_MARKUP
                                     )
     return PHOTO_UPLOAD
