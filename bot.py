@@ -66,9 +66,9 @@ REPLACEMENT_DETAILS = 2
 MAIN_KEYBOARD = [
     [KeyboardButton("📱 Открыть личный кабинет", web_app=WebAppInfo(
         url="https://new-bot1-murex.vercel.app"))],
-    ["📊 Передать показания", "📷 Распознать с фото"],
+    ["📊 Передать показания"],
     ["📈 История показаний", "🔧 Замена счётчиков"],
-    ["🔧 Замена счётчиков", "📞 Связаться с поддержкой"]
+    ["📞 Связаться с поддержкой"]
 ]
 MAIN_MARKUP = ReplyKeyboardMarkup(MAIN_KEYBOARD, resize_keyboard=True)
 
@@ -239,6 +239,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start_reading_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    reading_choice = ReplyKeyboardMarkup([
+        ["📷 Распознать с фото", "⌨️ Ввести вручную"],
+        ["❌ Отмена"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "Выберите способ передачи показаний:",
+        reply_markup=reading_choice
+    )
+    return READING_INPUT
+
     """Начало ввода показаний"""
     await update.message.reply_text(
         "📊 Передача показаний счётчика\n\n"
