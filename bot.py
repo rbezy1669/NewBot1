@@ -584,6 +584,7 @@ def main():
     readings_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(
             '^📊 Передать показания$'), start_reading_input)],
+
         states={
             "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
             READING_INPUT: [
@@ -596,7 +597,19 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND,
                                process_reading),
             ],
+            PHOTO_UPLOAD: [
+                MessageHandler(filters.PHOTO, process_photo),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
+            PHOTO_CONFIRM: [
+                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
+                               confirm_ocr_reading),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
         },
+
         fallbacks=[MessageHandler(filters.Regex(
             '^❌ Отмена$'), cancel_operation)],
     )
@@ -606,9 +619,32 @@ def main():
     replacement_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(
             '^🔧 Замена счётчиков$'), start_meter_replacement)],
+
         states={
-            REPLACEMENT_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_replacement_request)],
+            "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
+            READING_INPUT: [
+                MessageHandler(filters.Regex(
+                    "^📷 Распознать с фото$"), start_ocr_reading),
+                MessageHandler(filters.Regex(
+                    "^⌨️ Ввести вручную$"), start_reading_input),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               process_reading),
+            ],
+            PHOTO_UPLOAD: [
+                MessageHandler(filters.PHOTO, process_photo),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
+            PHOTO_CONFIRM: [
+                MessageHandler(filters.Regex("^(✅ Да|❌ Нет)$"),
+                               confirm_ocr_reading),
+                MessageHandler(filters.Regex(
+                    "^(❌ Отмена|Отмена)$"), cancel_handler),
+            ],
         },
+
         fallbacks=[MessageHandler(filters.Regex(
             '^❌ Отмена$'), cancel_operation)],
     )
@@ -643,12 +679,11 @@ if __name__ == "__main__":
 
 
 async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📸 Отправьте фотографию счётчика крупным планом.
-
-                                    "
-                                    "Изображение должно быть чётким, без бликов и с читаемыми цифрами.",
-                                    reply_markup=CANCEL_MARKUP
-                                    )
+    await update.message.reply_text(
+        "📸 Отправьте фотографию счётчика крупным планом.\n\n"
+        "Изображение должно быть чётким, без бликов и с читаемыми цифрами.",
+        reply_markup=CANCEL_MARKUP
+    )
     return PHOTO_UPLOAD
 
 
@@ -657,9 +692,9 @@ async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo_file = await update.message.photo[-1].get_file()
         photo_bytes = await photo_file.download_as_bytearray()
         image = Image.open(BytesIO(photo_bytes))
-
         text = pytesseract.image_to_string(image, config="--psm 6 digits")
         digits = "".join(filter(str.isdigit, text))
+
         if not digits:
             await update.message.reply_text(
                 "❌ Не удалось распознать цифры. Попробуйте ещё раз.",
@@ -669,9 +704,7 @@ async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         context.user_data["ocr_reading"] = int(digits)
         await update.message.reply_text(
-            f"🔍 Распознано: {digits}
-
-            Подтвердить?",
+            f"🔍 Распознано: {digits}\n\nПодтвердить?",
             reply_markup=ReplyKeyboardMarkup(
                 [["✅ Да", "❌ Нет"]], resize_keyboard=True)
         )
@@ -690,7 +723,8 @@ async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE
     if update.message.text == "✅ Да":
         reading_value = context.user_data.get("ocr_reading")
         telegram_id = update.effective_user.id
-        db.add_reading(telegram_id, reading_value)
+        if reading_value:
+            db.add_reading(telegram_id, reading_value)
         await update.message.reply_text(
             f"✅ Показания {reading_value} успешно записаны.",
             reply_markup=MAIN_MARKUP
