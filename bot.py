@@ -60,6 +60,8 @@ AUTH_URL = (
 
 # Состояния разговора
 READING_INPUT = 1
+PHOTO_UPLOAD = 3
+PHOTO_CONFIRM = 4
 REPLACEMENT_DETAILS = 2
 
 
@@ -384,7 +386,7 @@ async def process_replacement_request(update: Update, context: ContextTypes.DEFA
 • Только установка: от 1,200 ₽
 
 🏭 Трёхфазный счётчик:
-• Счётчик + установка: от 8,500 ₽  
+• Счётчик + установка: от 8,500 ₽
 • Только установка: от 2,500 ₽
 
 📋 В стоимость входит:
@@ -586,6 +588,10 @@ def main():
             "CANCEL": [MessageHandler(filters.Regex("^(❌ Отмена|Отмена)$"), cancel_handler)],
             READING_INPUT: [
                 MessageHandler(filters.Regex(
+                    "^📷 Распознать с фото$"), start_ocr_reading),
+                MessageHandler(filters.Regex(
+                    "^⌨️ Ввести вручную$"), start_reading_input),
+                MessageHandler(filters.Regex(
                     "^(❌ Отмена|Отмена)$"), cancel_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND,
                                process_reading),
@@ -635,89 +641,64 @@ def main():
 if __name__ == "__main__":
     main()
 
-    context.user_data["ocr_reading"] = int(digits)
-    await update.message.reply_text(
-        f"🔍 Распознано значение: {digits}\n\nПодтвердить?",
-        reply_markup=ReplyKeyboardMarkup(
-            [['✅ Да', '❌ Нет']], resize_keyboard=True)
-    )
-    return PHOTO_CONFIRM
-    except Exception as e:
-        logger.error(f"OCR error: {e}")
-        await update.message.reply_text("⚠️ Ошибка при распознавании. Попробуйте снова.", reply_markup=CANCEL_MARKUP)
-        return PHOTO_UPLOAD
-
-        context.user_data["ocr_reading"] = int(digits)
-        await update.message.reply_text(
-            f"🔍 Распознано: {digits}\n\nПодтвердить?",
-            reply_markup=ReplyKeyboardMarkup(
-                [['✅ Да', '❌ Нет']], resize_keyboard=True)
-        )
-        return PHOTO_CONFIRM
-    except Exception as e:
-        logger.error(f"OCR error: {e}")
-        await update.message.reply_text(
-            "⚠️ Ошибка при распознавании. Попробуйте снова.",
-            reply_markup=CANCEL_MARKUP
-        )
-        return PHOTO_UPLOAD
-
 
 async def start_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📸 Отправьте фотографию счётчика крупным планом.\n\n"
-        "Изображение должно быть чётким, без бликов и с читаемыми цифрами.",
-        reply_markup=CANCEL_MARKUP
-    )
+    await update.message.reply_text("📸 Отправьте фотографию счётчика крупным планом.
+
+                                    "
+                                    "Изображение должно быть чётким, без бликов и с читаемыми цифрами.",
+                                    reply_markup=CANCEL_MARKUP
+                                    )
     return PHOTO_UPLOAD
 
 
 async def process_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo_file = await update.message.photo[-1].get_file()
-    photo_bytes = await photo_file.download_as_bytearray()
-    image = Image.open(BytesIO(photo_bytes))
-
     try:
+        photo_file = await update.message.photo[-1].get_file()
+        photo_bytes = await photo_file.download_as_bytearray()
+        image = Image.open(BytesIO(photo_bytes))
+
         text = pytesseract.image_to_string(image, config="--psm 6 digits")
         digits = "".join(filter(str.isdigit, text))
         if not digits:
             await update.message.reply_text(
-                "❌ Не удалось распознать цифры. Попробуйте снова.",
+                "❌ Не удалось распознать цифры. Попробуйте ещё раз.",
                 reply_markup=CANCEL_MARKUP
             )
             return PHOTO_UPLOAD
 
         context.user_data["ocr_reading"] = int(digits)
         await update.message.reply_text(
-            f"🔍 Распознано: {digits}\n\nПодтвердить?",
+            f"🔍 Распознано: {digits}
+
+            Подтвердить?",
             reply_markup=ReplyKeyboardMarkup(
-                [['✅ Да', '❌ Нет']], resize_keyboard=True)
+                [["✅ Да", "❌ Нет"]], resize_keyboard=True)
         )
         return PHOTO_CONFIRM
+
     except Exception as e:
         logger.error(f"OCR error: {e}")
         await update.message.reply_text(
-            "⚠️ Ошибка при распознавании. Попробуйте снова.",
+            "⚠️ Ошибка при обработке изображения.",
             reply_markup=CANCEL_MARKUP
         )
         return PHOTO_UPLOAD
 
 
 async def confirm_ocr_reading(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if text == "✅ Да":
+    if update.message.text == "✅ Да":
         reading_value = context.user_data.get("ocr_reading")
         telegram_id = update.effective_user.id
         db.add_reading(telegram_id, reading_value)
         await update.message.reply_text(
-            f"✅ Показания {reading_value} приняты.",
+            f"✅ Показания {reading_value} успешно записаны.",
             reply_markup=MAIN_MARKUP
         )
     else:
         await update.message.reply_text(
-            "❌ Отменено. Вы можете передать показания снова.",
+            "❌ Передача показаний отменена.",
             reply_markup=MAIN_MARKUP
         )
-
     context.user_data.clear()
     return ConversationHandler.END
